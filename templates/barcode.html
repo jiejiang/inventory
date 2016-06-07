@@ -1,21 +1,29 @@
 <html>
     <head>
          <link rel="help" href="http://www.w3.org/TR/CSS21/tables.html#table-layout">
-
     </head>
     <body>
         <div>
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:250pt">
-                            <img src="static/img/ems.jpeg">
-                            <br>
-                            <h1>标准快递</h1>
-                            <br>
-                            时间: {{time}}
+                        <td style="width:250pt;border:none">
+                            <span style="font-size:4em">标准快递</span>
                         </td>
-                        <td style="width:350pt"><img src="tmp/top_barcode.png"></td>
+                        <td style="border:none"><img src="tmp/top_barcode_trim.png" style="width:100%"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:55pt">
+                            <span>寄件:</span>
+                        </td>
+                        <td>
+                            <span style="font-size:1.2em">吉林省长春市朝阳区前进大街晨光花园3号楼1单元201</span>
+                        </td>
+                        <td style="width:150pt"></td>
                     </tr>
 
                 </tbody>
@@ -23,22 +31,13 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:55pt">寄件:</td>
-                        <td>
-                            Need information from the sender, post code<br>
-                            City, etc..
+                        <td style="width:55pt">
+                            <span>收件:</span>
                         </td>
-                        <td><h1>{{receiver_city}}</h1></td>
-                    </tr>
-
-                </tbody>
-            </table>
-            <table>
-                <tbody>
-                    <tr>
-                        <td style="width:55pt">收件:</td>
                         <td>
-                             {{receiver_name}}&nbsp;{{receiver_mobile}}&nbsp;{{receiver_address}} <br> {{receiver_post_code}}
+                             <span style="font-size:1.5em">{{receiver_name}}&nbsp;{{receiver_mobile}}<br>
+                                 {{receiver_city}}&nbsp;{{receiver_address}}<br>
+                                 邮编:&nbsp;{{receiver_post_code}}</span>
                         </td>
                     </tr>
                 </tbody>
@@ -47,14 +46,17 @@
                 <tbody>
                     <tr>
                         <td>
-                            付款方式:<br>
-                            计费重量(KG):{{package_weight}}<br>
-                            报价金额(元):{{total_price}}
+                            <span>付款方式:</span><br>
+                            <span>计费重量(KG):{{package_weight}}</span><br>
+                            <span>报价金额(元):{{total_price}}</span>
                         </td>
                         <td>
-                            收件人/代收件人:<br>
-                            签收时间:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日
-                            <br>
+                            <span>收件人/代收件人:</span><br>
+                            <span>签收时间:
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日</span><br>
+                            <span style="font-size:0.8em">快件送达收货人地址, 经收件人或收件人允许的代收人签字, 视为送达.</span>
                         </td>
                     </tr>
 
@@ -63,30 +65,10 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:55pt">订单号:</td>
                         <td>
-                            <img src="tmp/mid_barcode.png" style="width:500pt"><br>
-                            <p>XXXXXXXXXXXXXXXXXXXXXXX&nbsp;件数{{n_package}}&nbsp;重量{{package_weight}}</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <table>
-                <tbody>
-                    <tr>
-                        <td style="width:55pt">配货信息:</td>
-                        <td>{{item_names}}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <table>
-                <tbody>
-                    <tr>
-                        <td style="width:350pt"><img src="tmp/bot_barcode.png"></td>
-                        <td style="width:250pt">
-                            <img src="static/img/ems.jpeg">
-                            <br>
+                            <span>件数: {{n_package}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;重量(KG): {{package_weight}}</span><br>
+                            <span>配货信息: </span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-size:1.1em">（总数: 0）</span>
+                            <br><br><br><br><br>
                         </td>
                     </tr>
                 </tbody>
@@ -95,25 +77,32 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:55pt">寄件:</td>
-                        <td>
-                            Need information from the sender, post code<br>
-                            City, etc..
+                        <td style="width:350pt;border:none"><img src="tmp/bot_barcode_trim.png" style="width:100%"></td>
+                        <td style="border:none"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:55pt"><span>寄件:</span></td>
+                        <td><span>吉林省长春市朝阳区前进大街晨光花园3号楼1单元201</span>
                         </td>
-                        <td style="width:55pt">收件:</td>
-                        <td>{{receiver_name}}&nbsp;{{receiver_mobile}}&nbsp;{{receiver_address}}&nbsp;{{receiver_city}}&nbsp;{{receiver_post_code}}</td>
+                        <td style="width:55pt"><span>收件:</span></td>
+                        <td><span>{{receiver_name}}&nbsp;{{receiver_mobile}}&nbsp;{{receiver_address}}&nbsp;{{receiver_city}}&nbsp;{{receiver_post_code}}</span></td>
                     </tr>
                 </tbody>
             </table>
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:400pt">备注: {{item_names}}
+                        <td style="width:350pt"><span>备注:</span><span style="font-size:1.2em">{{item_names}}</span>
                             <hr>
-                            网址: www.abcd.com&nbsp;电话: 123456
+                            <span>网址: www.ems.com.cn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;电话: 11183</span>
                         </td>
                         <td>
-                            <img src="static/img/ems_qr.png">
+                            <img src="static/img/ems_qr.png" style="width:100%">
                         </td>
                     </tr>
                 </tbody>

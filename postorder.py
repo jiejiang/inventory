@@ -11,28 +11,54 @@ import pandas as pd
 import barcode
 from barcode.writer import ImageWriter
 from weasyprint import HTML, CSS
+from wand.image import Image
 
 Code128 = barcode.get_barcode_class('code128')
 
+def trim(filepath):
+    im = Image.open(filepath)
+    bg = Image.new(im.mode, im.size, im.getpixel((0, 0)))
+    diff = ImageChops.difference(im, bg)
+    diff = ImageChops.add(diff, diff, 2.0, -100)
+    bbox = diff.getbbox()
+    if bbox:
+        im.crop(bbox)
+        im.save(filepath)
 
-def generate_pdf(filename, context):
-    Code128(u'59012341234571324P', writer=ImageWriter()).save('tmp/top_barcode', options={
+def generate_pdf(filename, context, tmpdir):
+    bot_image = os.path.join(tmpdir, 'bot_barcode_trim.png')
+    top_image = os.path.join(tmpdir, 'top_barcode_trim.png')
+    if os.path.exists(bot_image):
+        os.remove(bot_image)
+    if os.path.exists(top_image):
+        os.remove(top_image)
+
+    Code128(u'5111554333299', writer=ImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
         'module_height' : 7,
         'text_distance' : 0.5,
         'quiet_zone': 1,
+        'dpi': 1200,
+        'font_size' : 20,
     })
 
-    Code128(u'1100154624502', writer=ImageWriter()).save('tmp/mid_barcode', options={
-        'module_height' : 3,
-        'text_distance' : 0.5,
-        'quiet_zone': 1,
-    })
+    im = Image(filename=os.path.join(tmpdir, 'top_barcode.png'))
+    im.trim()
+    im.save(filename=top_image)
 
-    Code128(u'5111554333299', writer=ImageWriter()).save('tmp/bot_barcode', options={
+    Code128(u'5111554333299', writer=ImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
         'module_height' : 5,
         'text_distance' : 0.5,
         'quiet_zone': 1,
+        'dpi': 1200,
+        'font_size': 20,
     })
+
+    im = Image(filename=os.path.join(tmpdir, 'bot_barcode.png'))
+    im.trim()
+    im.save(filename=bot_image)
+
+    if not os.path.exists(top_image) or not os.path.exists(bot_image):
+        raise Exception, "Image failed to create"
 
     env = Environment(loader=FileSystemLoader('templates'))
     template = env.get_template('barcode.html')
@@ -44,7 +70,7 @@ def generate_pdf(filename, context):
 
     HTML(string=output_from_parsed_template, base_url='.').write_pdf(filename, stylesheets=["static/css/style.css"])
 
-def process_row(n_row, in_row, barcode_dir):
+def process_row(n_row, in_row, barcode_dir, tmpdir):
     data = []
     receiver_name = in_row[u'收件人名字（中文）']
     receiver_mobile = in_row[u'收件人手机号（11位数）']
@@ -74,7 +100,7 @@ def process_row(n_row, in_row, barcode_dir):
         total_price += item_price
     item_names = ", ".join(item_names)
 
-    generate_pdf(os.path.join(barcode_dir, '%d.pdf' % n_row), locals())
+    generate_pdf(os.path.join(barcode_dir, '%d.pdf' % n_row), locals(), tmpdir)
 
     return pd.DataFrame(data, columns=[u'收件人', u'电话号码.1', u'城市', u'邮编', u'收件人地址', u'内件名称', u'数量',
                                       u'总价（AUD）', u'毛重（KG）', u'物品名称', u'数量.1', u'单价', u'币别', u'备注'])
@@ -86,10 +112,11 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("--input", dest="input", metavar="FILE", help="input file")
     parser.add_option("--output", dest="output", metavar="DIR", help="output dir")
+    parser.add_option("--tmpdir", dest="tmpdir", metavar="DIR", help="tmpdir dir")
 
     (options, args) = parser.parse_args()
 
-    if not options.input or not options.output:
+    if not options.input or not options.output or not options.tmpdir:
         parser.print_help(sys.stderr)
         exit(1)
 
@@ -112,7 +139,7 @@ if __name__ == "__main__":
         os.makedirs(barcode_dir)
 
     for index, in_row in in_df.iterrows():
-        p_data = process_row(index, in_row, barcode_dir)
+        p_data = process_row(index, in_row, barcode_dir, options.tmpdir)
         package_data.append(p_data)
 
     pd.concat(package_data, ignore_index=True).to_excel(os.path.join(options.output, "1.xlsx"), columns=package_columns)
