@@ -1,0 +1,125 @@
+<html>
+    <head>
+         <link rel="help" href="http://www.w3.org/TR/CSS21/tables.html#table-layout">
+
+    </head>
+    <body>
+        <div>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:250pt">
+                            <img src="static/img/ems.jpeg">
+                            <br>
+                            <h1>标准快递</h1>
+                            <br>
+                            时间: {{time}}
+                        </td>
+                        <td style="width:350pt"><img src="tmp/top_barcode.png"></td>
+                    </tr>
+
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:55pt">寄件:</td>
+                        <td>
+                            Need information from the sender, post code<br>
+                            City, etc..
+                        </td>
+                        <td><h1>{{receiver_city}}</h1></td>
+                    </tr>
+
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:55pt">收件:</td>
+                        <td>
+                             {{receiver_name}}&nbsp;{{receiver_mobile}}&nbsp;{{receiver_address}} <br> {{receiver_post_code}}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            付款方式:<br>
+                            计费重量(KG):{{package_weight}}<br>
+                            报价金额(元):{{total_price}}
+                        </td>
+                        <td>
+                            收件人/代收件人:<br>
+                            签收时间:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日
+                            <br>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:55pt">订单号:</td>
+                        <td>
+                            <img src="tmp/mid_barcode.png" style="width:500pt"><br>
+                            <p>XXXXXXXXXXXXXXXXXXXXXXX&nbsp;件数{{n_package}}&nbsp;重量{{package_weight}}</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:55pt">配货信息:</td>
+                        <td>{{item_names}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:350pt"><img src="tmp/bot_barcode.png"></td>
+                        <td style="width:250pt">
+                            <img src="static/img/ems.jpeg">
+                            <br>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:55pt">寄件:</td>
+                        <td>
+                            Need information from the sender, post code<br>
+                            City, etc..
+                        </td>
+                        <td style="width:55pt">收件:</td>
+                        <td>{{receiver_name}}&nbsp;{{receiver_mobile}}&nbsp;{{receiver_address}}&nbsp;{{receiver_city}}&nbsp;{{receiver_post_code}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:400pt">备注: {{item_names}}
+                            <hr>
+                            网址: www.abcd.com&nbsp;电话: 123456
+                        </td>
+                        <td>
+                            <img src="static/img/ems_qr.png">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+    </body>
+</html>
