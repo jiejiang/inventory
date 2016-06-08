@@ -21,7 +21,10 @@
                             <span>寄件:</span>
                         </td>
                         <td>
-                            <span style="font-size:1.2em">吉林省长春市朝阳区前进大街晨光花园3号楼1单元201</span>
+                            <span style="font-size:1.2em">
+                                {{sender_name}}&nbsp;{{sender_phone}}<br>
+                                {{sender_address}}
+                            </span>
                         </td>
                         <td style="width:150pt"></td>
                     </tr>
@@ -35,9 +38,11 @@
                             <span>收件:</span>
                         </td>
                         <td>
-                             <span style="font-size:1.5em">{{receiver_name}}&nbsp;{{receiver_mobile}}<br>
+                             <span style="font-size:1.5em">
+                                 {{receiver_name}}&nbsp;{{receiver_mobile}}<br>
                                  {{receiver_city}}&nbsp;{{receiver_address}}<br>
-                                 邮编:&nbsp;{{receiver_post_code}}</span>
+                                 邮编:&nbsp;{{receiver_post_code}}
+                             </span>
                         </td>
                     </tr>
                 </tbody>
@@ -48,7 +53,7 @@
                         <td>
                             <span>付款方式:</span><br>
                             <span>计费重量(KG):{{package_weight}}</span><br>
-                            <span>报价金额(元):{{total_price}}</span>
+                            <span>报价金额(GBP):{{total_price}}</span>
                         </td>
                         <td>
                             <span>收件人/代收件人:</span><br>
@@ -87,10 +92,22 @@
                 <tbody>
                     <tr>
                         <td style="width:55pt"><span>寄件:</span></td>
-                        <td><span>吉林省长春市朝阳区前进大街晨光花园3号楼1单元201</span>
+                        <td>
+                            <span>
+                                {{sender_name}}&nbsp;{{sender_phone}}<br>
+                                {{sender_address}}
+                            </span>
                         </td>
-                        <td style="width:55pt"><span>收件:</span></td>
-                        <td><span>{{receiver_name}}&nbsp;{{receiver_mobile}}&nbsp;{{receiver_address}}&nbsp;{{receiver_city}}&nbsp;{{receiver_post_code}}</span></td>
+                        <td style="width:55pt">
+                            <span>收件:</span>
+                        </td>
+                        <td>
+                            <span>
+                                {{receiver_name}}&nbsp;{{receiver_mobile}}<br>
+                                {{receiver_address}}&nbsp;{{receiver_city}}<br>
+                                邮编:&nbsp;{{receiver_post_code}}
+                            </span>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -99,7 +116,7 @@
                     <tr>
                         <td style="width:350pt"><span>备注:</span><span style="font-size:1.2em">{{item_names}}</span>
                             <hr>
-                            <span>网址: www.ems.com.cn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;电话: 11183</span>
+                            <span>网址: www.ems.com.cn&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;客服电话: 11183</span>
                         </td>
                         <td>
                             <img src="static/img/ems_qr.png" style="width:100%">

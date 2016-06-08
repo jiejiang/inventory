@@ -15,15 +15,6 @@ from wand.image import Image
 
 Code128 = barcode.get_barcode_class('code128')
 
-def trim(filepath):
-    im = Image.open(filepath)
-    bg = Image.new(im.mode, im.size, im.getpixel((0, 0)))
-    diff = ImageChops.difference(im, bg)
-    diff = ImageChops.add(diff, diff, 2.0, -100)
-    bbox = diff.getbbox()
-    if bbox:
-        im.crop(bbox)
-        im.save(filepath)
 
 def generate_pdf(filename, context, tmpdir):
     bot_image = os.path.join(tmpdir, 'bot_barcode_trim.png')
@@ -34,11 +25,11 @@ def generate_pdf(filename, context, tmpdir):
         os.remove(top_image)
 
     Code128(u'5111554333299', writer=ImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
-        'module_height' : 7,
-        'text_distance' : 0.5,
+        'module_height': 7,
+        'text_distance': 0.5,
         'quiet_zone': 1,
         'dpi': 1200,
-        'font_size' : 20,
+        'font_size': 20,
     })
 
     im = Image(filename=os.path.join(tmpdir, 'top_barcode.png'))
@@ -46,8 +37,8 @@ def generate_pdf(filename, context, tmpdir):
     im.save(filename=top_image)
 
     Code128(u'5111554333299', writer=ImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
-        'module_height' : 5,
-        'text_distance' : 0.5,
+        'module_height': 5,
+        'text_distance': 0.5,
         'quiet_zone': 1,
         'dpi': 1200,
         'font_size': 20,
@@ -62,16 +53,21 @@ def generate_pdf(filename, context, tmpdir):
 
     env = Environment(loader=FileSystemLoader('templates'))
     template = env.get_template('barcode.html')
-    context['time'] =  datetime.datetime.now()
+    context['time'] = datetime.datetime.now()
     output_from_parsed_template = template.render(context)
-
-    with codecs.open(filename + ".html", "wb", encoding='utf8') as fh:
-        fh.write(output_from_parsed_template)
+    #
+    # with codecs.open(filename + ".html", "wb", encoding='utf8') as fh:
+    #     fh.write(output_from_parsed_template)
 
     HTML(string=output_from_parsed_template, base_url='.').write_pdf(filename, stylesheets=["static/css/style.css"])
 
+
 def process_row(n_row, in_row, barcode_dir, tmpdir):
-    data = []
+    p_data = []
+    c_data = []
+    sender_name = in_row[u'发件人名字']
+    sender_phone = in_row[u'发件人电话号码']
+    sender_address = in_row[u'发件人地址']
     receiver_name = in_row[u'收件人名字（中文）']
     receiver_mobile = in_row[u'收件人手机号（11位数）']
     receiver_address = in_row[u'收件人地址（无需包括省份和城市）']
@@ -93,17 +89,36 @@ def process_row(n_row, in_row, barcode_dir, tmpdir):
         unit_price = in_row[u'物品单价（英镑）%s' % suffix]
 
         item_price = item_count * unit_price
-        data.append([receiver_name, receiver_mobile, receiver_city, receiver_post_code, receiver_address, item_name,
-                item_count, item_price, package_weight, item_name, item_count, unit_price, "GBP", id_number])
         item_names.append(item_name)
-
         total_price += item_price
+
+        p_data.append([
+            sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
+            receiver_post_code, receiver_address, item_name, item_count, item_price, package_weight, item_name,
+            item_count, unit_price, "GBP", id_number
+        ])
+        c_data.append([
+            'xxxx', package_weight, package_weight, item_count, item_name,
+            receiver_name, 'XXX', receiver_address, receiver_mobile, id_number,
+            sender_name, 'ZZZ', sender_address, sender_phone,
+            item_count, item_price, id_number
+        ])
+
     item_names = ", ".join(item_names)
 
     generate_pdf(os.path.join(barcode_dir, '%d.pdf' % n_row), locals(), tmpdir)
 
-    return pd.DataFrame(data, columns=[u'收件人', u'电话号码.1', u'城市', u'邮编', u'收件人地址', u'内件名称', u'数量',
-                                      u'总价（AUD）', u'毛重（KG）', u'物品名称', u'数量.1', u'单价', u'币别', u'备注'])
+    return pd.DataFrame(p_data, columns=[
+        u'发件人', u'发件人地址', u'电话号码', u'收件人', u'电话号码.1', u'城市',
+        u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（AUD）', u'毛重（KG）', u'物品名称',
+        u'数量.1', u'单价', u'币别', u'备注'
+    ]), pd.DataFrame(c_data, columns=[
+        u'企业运单编号', u'净重', u'毛重', u'件数', u'主要商品',
+        u'收件人姓名', u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件号码',
+        u'发货人名称', u'发货人省市区代码', u'发货人地址', u'发货人电话',
+        u'商品数量', u'商品总价', u'备注',
+    ])
+
 
 def normalize_columns(in_df):
     in_df.columns = map(lambda x: "".join(x.strip().split()), in_df.columns)
@@ -127,21 +142,62 @@ if __name__ == "__main__":
     normalize_columns(in_df)
 
     package_columns = [u"报关单号", u'总运单号', u'袋号', u'快件单号', u'发件人', u'发件人地址',
-               u'电话号码', u'收件人', u'电话号码.1', u'城市', u'邮编', u'收件人地址', u'内件名称',
-               u'数量', u'总价（AUD）', u'毛重（KG）', u'税号', u'物品名称', u'品牌', u'数量.1',
-               u'单位', u'单价', u'币别', u'备注']
+                       u'电话号码', u'收件人', u'电话号码.1', u'城市', u'邮编', u'收件人地址', u'内件名称',
+                       u'数量', u'总价（AUD）', u'毛重（KG）', u'税号', u'物品名称', u'品牌', u'数量.1',
+                       u'单位', u'单价', u'币别', u'备注']
+
+    customs_columns = [u'订单编号', u'物流企业备案号', u'电商平台备案号', u'企业运单编号', u'物流状态', u'运费', u'运费币制',
+                       u'运输方式', u'包装种类', u'运输工具', u'保价费', u'保价费币制', u'净重', u'毛重', u'件数', u'主要商品',
+                       u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码', u'收件人姓名', u'收件人所在国家(地区）代码',
+                       u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件类型', u'收件人证件号码', u'包裹单号',
+                       u'发货人名称', u'发货人所在国家(地区）代码', u'发货人省市区代码', u'发货人地址', u'发货人电话',
+                       u'子订单编号', u'电商商户企业备案号', u'商品货号', u'原产国（地区）/最终目的国（地区）代码', u'计量单位',
+                       u'商品数量', u'商品总价', u'备注', u'商品备案号', u'商品单价 货物的单价，RMB金额（元）', u'商品币制',
+                       u'子订单备注', u'进出口标识']
 
     package_df = pd.DataFrame([], columns=package_columns)
     package_data = [package_df]
+    customs_df = pd.DataFrame([], columns=customs_columns)
+    customs_data = [customs_df]
 
     barcode_dir = os.path.join(options.output, "barcode")
     if not os.path.exists(barcode_dir):
         os.makedirs(barcode_dir)
 
     for index, in_row in in_df.iterrows():
-        p_data = process_row(index, in_row, barcode_dir, options.tmpdir)
+        p_data, c_data = process_row(index, in_row, barcode_dir, options.tmpdir)
         package_data.append(p_data)
+        customs_data.append(c_data)
 
-    pd.concat(package_data, ignore_index=True).to_excel(os.path.join(options.output, "1.xlsx"), columns=package_columns)
+    package_final_df = pd.concat(package_data, ignore_index=True)
+    package_final_df.to_excel(os.path.join(options.output, "zhuang_xiang.xlsx"),
+                                                        columns=package_columns)
 
+    customs_final_df = pd.concat(customs_data, ignore_index=True)
+    customs_final_df[u'物流企业备案号'] = 'PTE681320150000001'
+    customs_final_df[u'电商平台备案号'] = 'PTE681320150000002'
+    customs_final_df[u'物流状态'] = '0'
+    customs_final_df[u'运费'] = 0
+    customs_final_df[u'运费币制'] = '303'
+    customs_final_df[u'运输方式'] = '4'
+    customs_final_df[u'包装种类'] = '5'
+    customs_final_df[u'运输工具'] = '4'
+    customs_final_df[u'保价费'] = 0
+    customs_final_df[u'保价费币制'] = '303'
+    customs_final_df[u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码'] = '6813'
+    customs_final_df[u'收件人所在国家(地区）代码'] = '142'
+    customs_final_df[u'收件人证件类型'] = '0'
+    customs_final_df[u'发货人所在国家(地区）代码'] = '303'
+    customs_final_df[u'电商商户企业备案号'] = 'PTE681320150000002'
+    customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index)+1)
+    customs_final_df[u'原产国（地区）/最终目的国（地区）代码'] = '303'
+    customs_final_df[u'计量单位'] = '303'
+    customs_final_df[u'商品备案号'] = '01010700'
+    customs_final_df[u'商品单价 货物的单价，RMB金额（元）'] = 80
+    customs_final_df[u'商品备案号'] = '01010700'
+    customs_final_df[u'商品币制'] = '142'
+    customs_final_df[u'进出口标识'] = 'I'
+    customs_final_df[u'商品备案号'] = '01010700'
 
+    customs_final_df.to_excel(os.path.join(options.output, "sheng_bao.xlsx"),
+                                                        columns=customs_columns)
