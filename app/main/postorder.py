@@ -4,7 +4,12 @@ import cStringIO
 
 __author__ = 'jie'
 
-import sys, os, shutil, zipfile, codecs, datetime
+import sys
+import os
+import shutil
+import zipfile
+import codecs
+import datetime
 from optparse import OptionParser
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
@@ -59,7 +64,8 @@ def generate_pdf(filename, context, tmpdir):
     # with codecs.open(filename + ".html", "wb", encoding='utf8') as fh:
     #     fh.write(output_from_parsed_template)
 
-    HTML(string=output_from_parsed_template, base_url='.').write_pdf(filename, stylesheets=["static/css/style.css"])
+    HTML(string=output_from_parsed_template, base_url='.').write_pdf(
+        filename, stylesheets=["static/css/style.css"])
 
 
 def process_row(n_row, in_row, barcode_dir, tmpdir):
@@ -83,6 +89,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir):
     total_price = 0
     item_names = []
     for i in xrange(n_package):
+        if i > 5:
+            break
         suffix = "" if i == 0 else ".%d" % i
         item_name = in_row[u'申报物品%d(英文）' % (i + 1)]
         item_count = in_row[u'数量%s' % suffix]
@@ -122,6 +130,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir):
 
 def normalize_columns(in_df):
     in_df.columns = map(lambda x: "".join(x.strip().split()), in_df.columns)
+
 
 def xls_to_orders(input, output, tmpdir, percent_callback=None):
     if percent_callback:
@@ -197,9 +206,12 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None):
 
 if __name__ == "__main__":
     parser = OptionParser()
-    parser.add_option("--input", dest="input", metavar="FILE", help="input file")
-    parser.add_option("--output", dest="output", metavar="DIR", help="output dir")
-    parser.add_option("--tmpdir", dest="tmpdir", metavar="DIR", help="tmpdir dir")
+    parser.add_option("--input", dest="input",
+                      metavar="FILE", help="input file")
+    parser.add_option("--output", dest="output",
+                      metavar="DIR", help="output dir")
+    parser.add_option("--tmpdir", dest="tmpdir",
+                      metavar="DIR", help="tmpdir dir")
 
     (options, args) = parser.parse_args()
 
@@ -211,4 +223,3 @@ if __name__ == "__main__":
         os.makedirs(options.output)
 
     xls_to_orders(options.input, options.output, options.tmpdir)
-
