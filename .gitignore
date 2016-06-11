@@ -5,3 +5,7 @@ data
 tmp
 test
 venv
+upload
+download
+app/static/.webassets-cache/
+app/bower_components

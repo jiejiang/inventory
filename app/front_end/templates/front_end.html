@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('bower.static', filename='startbootstrap-sb-admin-2/dist/css/timeline.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('bower.static', filename='morrisjs/morris.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('bower.static', filename='angular-bootstrap/ui-bootstrap-csp.css') }}">
+{% endblock %}
+
+{% block body_attribs %} ng-app="postOrdersApp" ng-strict-di api_prefix="{{ api_prefix }}" {% endblock %}
+
+{% block content %}
+<div id="wrapper" ng-controller="Frame">
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation" style="margin-bottom: 0">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="{{ url_for('front_end.index')}}#/"><i class="fa fa-book fa-fw"></i> Postal Orders</a>
+        </div>
+        <!-- /.navbar-header -->
+
+        <ul class="nav navbar-top-links navbar-right">
+            <li class="top-half-buffer">
+               <h5>Contact</h5>
+            </li>
+        </ul>
+
+        <!-- /.navbar-top-links -->
+
+        <div class="navbar-default sidebar" role="navigation">
+            <div class="sidebar-nav navbar-collapse">
+                <ul class="nav" id="side-menu">
+                    <li>
+                        <a href="#/batch-order" ng-class="{active: isActive('/batch-order')}"><i class="fa fa-user fa-fw"></i> Batch Order</a>
+                    </li>
+
+                    <!--
+                    <li>
+                        <a href="#"><i class="fa fa-files-o fa-fw"></i> <span class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level">
+                            <li>
+                                <a>a</a>
+                            </li>
+                            <li>
+                                <a>b</a>
+                            </li>
+                        </ul>
+
+                    </li>
+
+                    <li>
+                        <a href="#" ><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+                    </li>
+                    -->
+                </ul>
+            </div>
+            <!-- /.sidebar-collapse -->
+        </div>
+        <!-- /.navbar-static-side -->
+    </nav>
+
+
+    <div id="page-wrapper" >
+        <div class="row ">
+            <div class="col-lg-12">
+                <uib-alert ng-repeat="alert in alerts" type="{[alert.type]}" close="closeAlert($index)" class="top-double-buffer">{[alert.msg]}</uib-alert>
+            </div>
+        </div>
+
+        <div ng-view>
+
+        </div>
+
+    </div>
+
+    <div class="myfooter top-double-buffer">
+    Copyright 2016
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('bower.static', filename='metisMenu/dist/metisMenu.min.js') }}"></script>
+
+    <script src="{{ url_for('bower.static', filename='angular/angular.min.js') }}"></script>
+    <script src="{{ url_for('bower.static', filename='ng-file-upload/ng-file-upload-shim.js') }}"></script>
+    <script src="{{ url_for('bower.static', filename='ng-file-upload/ng-file-upload.js') }}"></script>
+    <script src="{{ url_for('bower.static', filename='angular-route/angular-route.min.js') }}"></script>
+    <script src="{{ url_for('bower.static', filename='lodash/dist/lodash.min.js') }}"></script>
+    <script src="{{ url_for('bower.static', filename='restangular/dist/restangular.min.js') }}"></script>
+
+    <script src="{{ url_for('bower.static', filename='angular-bootstrap/ui-bootstrap-tpls.min.js') }}"></script>
+
+    {% assets filters="jsmin", output="gen/postorders_front_end.js",
+        "front_end/js/main.js", "front_end/js/controllers/frame.js",
+        "front_end/js/controllers/batch-order.js", "front_end/js/factories/batch-order.js" %}
+        <script type="text/javascript" src="{{ ASSET_URL }}"></script>
+    {% endassets %}
+
+{% endblock %}
+

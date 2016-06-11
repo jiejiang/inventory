@@ -123,22 +123,10 @@ def process_row(n_row, in_row, barcode_dir, tmpdir):
 def normalize_columns(in_df):
     in_df.columns = map(lambda x: "".join(x.strip().split()), in_df.columns)
 
-if __name__ == "__main__":
-    parser = OptionParser()
-    parser.add_option("--input", dest="input", metavar="FILE", help="input file")
-    parser.add_option("--output", dest="output", metavar="DIR", help="output dir")
-    parser.add_option("--tmpdir", dest="tmpdir", metavar="DIR", help="tmpdir dir")
-
-    (options, args) = parser.parse_args()
-
-    if not options.input or not options.output or not options.tmpdir:
-        parser.print_help(sys.stderr)
-        exit(1)
-
-    if not os.path.exists(options.output):
-        os.makedirs(options.output)
-
-    in_df = pd.read_excel(options.input)
+def xls_to_orders(input, output, tmpdir, percent_callback=None):
+    if percent_callback:
+        percent_callback(0)
+    in_df = pd.read_excel(input)
     normalize_columns(in_df)
 
     package_columns = [u"报关单号", u'总运单号', u'袋号', u'快件单号', u'发件人', u'发件人地址',
@@ -160,18 +148,20 @@ if __name__ == "__main__":
     customs_df = pd.DataFrame([], columns=customs_columns)
     customs_data = [customs_df]
 
-    barcode_dir = os.path.join(options.output, "barcode")
+    barcode_dir = os.path.join(output, "barcode")
     if not os.path.exists(barcode_dir):
         os.makedirs(barcode_dir)
 
     for index, in_row in in_df.iterrows():
-        p_data, c_data = process_row(index, in_row, barcode_dir, options.tmpdir)
+        p_data, c_data = process_row(index, in_row, barcode_dir, tmpdir)
         package_data.append(p_data)
         customs_data.append(c_data)
+        if percent_callback:
+            percent_callback(int(index * 100.0 / len(in_df.index)))
 
     package_final_df = pd.concat(package_data, ignore_index=True)
-    package_final_df.to_excel(os.path.join(options.output, "zhuang_xiang.xlsx"),
-                                                        columns=package_columns)
+    package_final_df.to_excel(os.path.join(output, "zhuang_xiang.xlsx"),
+                              columns=package_columns)
 
     customs_final_df = pd.concat(customs_data, ignore_index=True)
     customs_final_df[u'物流企业备案号'] = 'PTE681320150000001'
@@ -189,7 +179,7 @@ if __name__ == "__main__":
     customs_final_df[u'收件人证件类型'] = '0'
     customs_final_df[u'发货人所在国家(地区）代码'] = '303'
     customs_final_df[u'电商商户企业备案号'] = 'PTE681320150000002'
-    customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index)+1)
+    customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df[u'原产国（地区）/最终目的国（地区）代码'] = '303'
     customs_final_df[u'计量单位'] = '303'
     customs_final_df[u'商品备案号'] = '01010700'
@@ -199,5 +189,26 @@ if __name__ == "__main__":
     customs_final_df[u'进出口标识'] = 'I'
     customs_final_df[u'商品备案号'] = '01010700'
 
-    customs_final_df.to_excel(os.path.join(options.output, "sheng_bao.xlsx"),
-                                                        columns=customs_columns)
+    customs_final_df.to_excel(os.path.join(output, "sheng_bao.xlsx"),
+                              columns=customs_columns)
+
+    if percent_callback:
+        percent_callback(100)
+
+if __name__ == "__main__":
+    parser = OptionParser()
+    parser.add_option("--input", dest="input", metavar="FILE", help="input file")
+    parser.add_option("--output", dest="output", metavar="DIR", help="output dir")
+    parser.add_option("--tmpdir", dest="tmpdir", metavar="DIR", help="tmpdir dir")
+
+    (options, args) = parser.parse_args()
+
+    if not options.input or not options.output or not options.tmpdir:
+        parser.print_help(sys.stderr)
+        exit(1)
+
+    if not os.path.exists(options.output):
+        os.makedirs(options.output)
+
+    xls_to_orders(options.input, options.output, options.tmpdir)
+
