@@ -9,3 +9,4 @@ upload
 download
 app/static/.webassets-cache/
 app/bower_components
+instance/local_config.py
