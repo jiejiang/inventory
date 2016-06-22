@@ -1,18 +1,49 @@
 __author__ = 'jie'
 
-import os
+import os, sys
 
 from app import app
 from flask_script import Manager, Shell, Server
 from flask_migrate import Migrate, MigrateCommand
 
 from app import db
+from app.models import City
+from app.main.postorder import xls_to_orders
 
 def make_shell_context():
     return dict(app=app, db=db)
 
 if __name__ == '__main__':
     manager = Manager(app)
+
+    @manager.command
+    def populate(filename):
+        "Populate"
+        City.populate(filename)
+
+    @manager.command
+    def find_province(name):
+        "Find province"
+        province = City.find_province(name)
+        if province:
+            print province.name
+        else:
+            print "Not Found"
+
+    @manager.command
+    def batch(input, output, tmpdir):
+
+        if not os.path.exists(output):
+            os.makedirs(output)
+
+        try:
+            xls_to_orders(input, output, tmpdir)
+        except Exception, inst:
+            import traceback
+            traceback.print_exc(sys.stderr)
+            print >> sys.stderr, inst.message.encode('utf-8')
+
+
     migrate = Migrate(app, db)
     manager.add_command("shell", Shell(make_context=make_shell_context))
     manager.add_command('db', MigrateCommand)

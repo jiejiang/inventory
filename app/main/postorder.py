@@ -4,12 +4,15 @@ import cStringIO
 
 __author__ = 'jie'
 
+import re
 import sys
 import os
 import shutil
 import zipfile
 import codecs
 import datetime
+import string
+import random
 from optparse import OptionParser
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
@@ -18,10 +21,50 @@ from barcode.writer import ImageWriter
 from weasyprint import HTML, CSS
 from wand.image import Image
 
+from ..models import City
+
 Code128 = barcode.get_barcode_class('code128')
 
+PROVINCE_INFO_MAP = {
+    u"湖南": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"广西": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"海南": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"江西": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"福建": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"湖北": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"江苏": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"上海": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"浙江": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"河北": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"安徽": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"河南": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"山东": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"山西": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"陕西": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"贵州": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"云南": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"重庆": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"四川": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"北京": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"天津": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"辽宁": {'ticket_initial': 9, 'package_type': u"快递包裹"},
+    u"黑龙江": {'ticket_initial': 9, 'package_type': u"快递包裹"},
 
-def generate_pdf(filename, context, tmpdir):
+    u"广东": {'ticket_initial': 9, 'package_type': u"国内标准快递"},
+
+    u"内蒙古": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"甘肃": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"青海": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"宁夏": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"吉林": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"西藏": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"新疆": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+}
+
+ITEM_NAME_RE = re.compile(ur"^.*?((([123一二三])|([4四]))段|(\d+)g)$", flags=re.U|re.I)
+#ITEM_NAME_RE = re.compile(ur"^.*?1段$", flags=re.U|re.I)
+
+def generate_pdf(ticket_number, filename, context, tmpdir):
     bot_image = os.path.join(tmpdir, 'bot_barcode_trim.png')
     top_image = os.path.join(tmpdir, 'top_barcode_trim.png')
     if os.path.exists(bot_image):
@@ -29,7 +72,7 @@ def generate_pdf(filename, context, tmpdir):
     if os.path.exists(top_image):
         os.remove(top_image)
 
-    Code128(u'5111554333299', writer=ImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
+    Code128(ticket_number, writer=ImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
         'module_height': 7,
         'text_distance': 0.5,
         'quiet_zone': 1,
@@ -41,7 +84,7 @@ def generate_pdf(filename, context, tmpdir):
     im.trim()
     im.save(filename=top_image)
 
-    Code128(u'5111554333299', writer=ImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
+    Code128(ticket_number, writer=ImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
         'module_height': 5,
         'text_distance': 0.5,
         'quiet_zone': 1,
@@ -67,24 +110,36 @@ def generate_pdf(filename, context, tmpdir):
     HTML(string=output_from_parsed_template, base_url='.').write_pdf(
         filename, stylesheets=["static/css/style.css"])
 
+def fetch_ticket_number(n_row, receiver_city):
+    city_name = "".join(receiver_city.strip().split())
+    province = City.find_province(city_name)
+    if not province:
+        raise Exception, "Cannot find province: %s at row %d" % (city_name, n_row)
+    if not province.name in PROVINCE_INFO_MAP:
+        raise Exception, "Post to province %s is not supported: %s at row %d" % (city_name, n_row)
+    info = PROVINCE_INFO_MAP[province.name]
+    return info['package_type'], \
+           "%d%s" % (info['ticket_initial'], ''.join([random.choice(string.digits) for _ in range(8)]))
 
 def process_row(n_row, in_row, barcode_dir, tmpdir):
     p_data = []
     c_data = []
     sender_name = in_row[u'发件人名字']
-    sender_phone = in_row[u'发件人电话号码']
+    sender_phone = str(in_row[u'发件人电话号码'])
     sender_address = in_row[u'发件人地址']
     receiver_name = in_row[u'收件人名字（中文）']
-    receiver_mobile = in_row[u'收件人手机号（11位数）']
+    receiver_mobile = str(in_row[u'收件人手机号（11位数）'])
     receiver_address = in_row[u'收件人地址（无需包括省份和城市）']
     receiver_city = in_row[u'收件人城市（中文）']
-    receiver_post_code = in_row[u'收件人邮编']
+    receiver_post_code = str(in_row[u'收件人邮编'])
     n_package = int(in_row[u'包裹数量'])
     package_weight = in_row[u'包裹重量（公斤）']
     length = in_row[u'长（厘米）']
     width = in_row[u'宽（厘米）']
     height = in_row[u'高（厘米）']
-    id_number = in_row[u'身份证号(EMS需要)']
+    id_number = str(in_row[u'身份证号(EMS需要)'])
+
+    package_type, ticket_number = fetch_ticket_number(n_row, receiver_city)
 
     total_price = 0
     item_names = []
@@ -96,35 +151,48 @@ def process_row(n_row, in_row, barcode_dir, tmpdir):
         item_count = in_row[u'数量%s' % suffix]
         unit_price = in_row[u'物品单价（英镑）%s' % suffix]
 
-        item_price = item_count * unit_price
+        m = ITEM_NAME_RE.match(item_name)
+        if not m:
+            raise Exception, "Item name format wrong: %s at row %d" % (item_name, n_row)
+        if m.group(3):
+            item_weight = '900'
+            item_name += "%sg" % item_weight
+        elif m.group(4):
+            item_weight = '800'
+            item_name += "%sg" % item_weight
+        else:
+            item_weight = int(m.group(5))
+
+        item_weight_convert = int(item_weight) * item_count / 1000.0
+        item_price = item_weight_convert * 90
         item_names.append(item_name)
         total_price += item_price
 
         p_data.append([
-            sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
+            ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
             receiver_post_code, receiver_address, item_name, item_count, item_price, package_weight, item_name,
             item_count, unit_price, "GBP", id_number
         ])
         c_data.append([
-            'xxxx', package_weight, package_weight, item_count, item_name,
-            receiver_name, 'XXX', receiver_address, receiver_mobile, id_number,
-            sender_name, 'ZZZ', sender_address, sender_phone,
-            item_count, item_price, id_number
+            ticket_number, item_count, item_name,
+            receiver_name, receiver_post_code, receiver_address, receiver_mobile, id_number,
+            sender_name, receiver_post_code, sender_address, sender_phone,
+            "%.1f" % item_weight_convert, "%.0f" % item_price
         ])
 
     item_names = ", ".join(item_names)
 
-    generate_pdf(os.path.join(barcode_dir, '%d.pdf' % n_row), locals(), tmpdir)
+    generate_pdf(ticket_number, os.path.join(barcode_dir, '%s.pdf' % ticket_number), locals(), tmpdir)
 
     return pd.DataFrame(p_data, columns=[
-        u'发件人', u'发件人地址', u'电话号码', u'收件人', u'电话号码.1', u'城市',
-        u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（AUD）', u'毛重（KG）', u'物品名称',
+        u'快件单号', u'发件人', u'发件人地址', u'电话号码', u'收件人', u'电话号码.1', u'城市',
+        u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（GBP）', u'毛重（KG）', u'物品名称',
         u'数量.1', u'单价', u'币别', u'备注'
     ]), pd.DataFrame(c_data, columns=[
-        u'企业运单编号', u'净重', u'毛重', u'件数', u'主要商品',
+        u'企业运单编号', u'箱件数', u'主要商品',
         u'收件人姓名', u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件号码',
         u'发货人名称', u'发货人省市区代码', u'发货人地址', u'发货人电话',
-        u'商品数量', u'商品总价', u'备注',
+        u'净重/数量', u'商品总价',
     ])
 
 
@@ -140,17 +208,19 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None):
 
     package_columns = [u"报关单号", u'总运单号', u'袋号', u'快件单号', u'发件人', u'发件人地址',
                        u'电话号码', u'收件人', u'电话号码.1', u'城市', u'邮编', u'收件人地址', u'内件名称',
-                       u'数量', u'总价（AUD）', u'毛重（KG）', u'税号', u'物品名称', u'品牌', u'数量.1',
+                       u'数量', u'总价（GBP）', u'毛重（KG）', u'税号', u'物品名称', u'品牌', u'数量.1',
                        u'单位', u'单价', u'币别', u'备注']
 
     customs_columns = [u'订单编号', u'物流企业备案号', u'电商平台备案号', u'企业运单编号', u'物流状态', u'运费', u'运费币制',
-                       u'运输方式', u'包装种类', u'运输工具', u'保价费', u'保价费币制', u'净重', u'毛重', u'件数', u'主要商品',
+                       u'运输方式', u'运输工具名称', u'包装种类', u'保价费', u'保价费币制', u'分运单净重', u'分运单毛重', u'箱件数', u'主要商品',
                        u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码', u'收件人姓名', u'收件人所在国家(地区）代码',
                        u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件类型', u'收件人证件号码', u'包裹单号',
                        u'发货人名称', u'发货人所在国家(地区）代码', u'发货人省市区代码', u'发货人地址', u'发货人电话',
                        u'子订单编号', u'电商商户企业备案号', u'商品货号', u'原产国（地区）/最终目的国（地区）代码', u'计量单位',
-                       u'商品数量', u'商品总价', u'备注', u'商品备案号', u'商品单价 货物的单价，RMB金额（元）', u'商品币制',
-                       u'子订单备注', u'进出口标识']
+                       u'净重/数量', u'商品总价', u'载货清单号', u'商品备案号', u'商品单价 货物的单价，RMB金额（元）', u'商品币制',
+                       u'子订单备注', u'进出口标识', u'是否退运', u'原运单号', u'退运原因', u'运输工具航次(班)号',
+                       u'码头/货场代码（为物流监控备用）', u'商品毛重', u'仓单申报类型N表示新增M修改',
+                       u'第一法定数量CD类必填，AB类不填', ]
 
     package_df = pd.DataFrame([], columns=package_columns)
     package_data = [package_df]
@@ -169,48 +239,52 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None):
             percent_callback(int(index * 100.0 / len(in_df.index)))
 
     package_final_df = pd.concat(package_data, ignore_index=True)
-    package_final_df.to_excel(os.path.join(output, "zhuang_xiang.xlsx"),
+    package_final_df[u'税号'] = '01010700'
+    package_final_df.to_excel(os.path.join(output, u"机场装箱单.xlsx"),
                               columns=package_columns)
 
     customs_final_df = pd.concat(customs_data, ignore_index=True)
-    customs_final_df[u'物流企业备案号'] = 'PTE681320150000001'
-    customs_final_df[u'电商平台备案号'] = 'PTE681320150000002'
+    customs_final_df[u'物流企业备案号'] = 'PTE681320150000003'
+    customs_final_df[u'电商平台备案号'] = 'PTE681320150000004'
     customs_final_df[u'物流状态'] = '0'
     customs_final_df[u'运费'] = 0
-    customs_final_df[u'运费币制'] = '303'
+    customs_final_df[u'运费币制'] = '142'
     customs_final_df[u'运输方式'] = '4'
-    customs_final_df[u'包装种类'] = '5'
-    customs_final_df[u'运输工具'] = '4'
+    customs_final_df[u'包装种类'] = '4'
     customs_final_df[u'保价费'] = 0
-    customs_final_df[u'保价费币制'] = '303'
+    customs_final_df[u'保价费币制'] = '142'
+    customs_final_df[u'分运单净重'] = 4
+    customs_final_df[u'分运单毛重'] = 4.35
     customs_final_df[u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码'] = '6813'
     customs_final_df[u'收件人所在国家(地区）代码'] = '142'
-    customs_final_df[u'收件人证件类型'] = '0'
-    customs_final_df[u'发货人所在国家(地区）代码'] = '303'
-    customs_final_df[u'电商商户企业备案号'] = 'PTE681320150000002'
+    customs_final_df[u'收件人证件类型'] = '1'
+    customs_final_df[u'发货人所在国家(地区）代码'] = '601'
+    customs_final_df[u'电商商户企业备案号'] = 'PTE681320150000004'
     customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df[u'原产国（地区）/最终目的国（地区）代码'] = '303'
-    customs_final_df[u'计量单位'] = '303'
+    customs_final_df[u'计量单位'] = '035'
     customs_final_df[u'商品备案号'] = '01010700'
-    customs_final_df[u'商品单价 货物的单价，RMB金额（元）'] = 80
+    customs_final_df[u'商品单价 货物的单价，RMB金额（元）'] = 90
     customs_final_df[u'商品备案号'] = '01010700'
     customs_final_df[u'商品币制'] = '142'
     customs_final_df[u'进出口标识'] = 'I'
-    customs_final_df[u'商品备案号'] = '01010700'
+    customs_final_df[u'码头/货场代码（为物流监控备用）'] = '6813'
+    customs_final_df[u'商品毛重'] = 4.35
+    customs_final_df[u'仓单申报类型N表示新增M修改'] = 'N'
 
-    customs_final_df.to_excel(os.path.join(output, "sheng_bao.xlsx"),
-                              columns=customs_columns)
+    customs_final_df.to_excel(os.path.join(output, u"申报表格.xlsx"),
+                              columns=customs_columns, index=False)
 
     if percent_callback:
         percent_callback(100)
 
 if __name__ == "__main__":
     parser = OptionParser()
-    parser.add_option("--input", dest="input",
+    parser.add_option("-i", "--input", dest="input",
                       metavar="FILE", help="input file")
-    parser.add_option("--output", dest="output",
+    parser.add_option("-o", "--output", dest="output",
                       metavar="DIR", help="output dir")
-    parser.add_option("--tmpdir", dest="tmpdir",
+    parser.add_option("-t", "--tmpdir", dest="tmpdir",
                       metavar="DIR", help="tmpdir dir")
 
     (options, args) = parser.parse_args()
@@ -222,4 +296,9 @@ if __name__ == "__main__":
     if not os.path.exists(options.output):
         os.makedirs(options.output)
 
-    xls_to_orders(options.input, options.output, options.tmpdir)
+    try:
+        xls_to_orders(options.input, options.output, options.tmpdir)
+    except Exception, inst:
+        import traceback
+        traceback.print_exc(sys.stderr)
+        print >> sys.stderr, inst.message.encode('utf-8')
