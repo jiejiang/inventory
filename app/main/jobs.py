@@ -1,6 +1,11 @@
 __author__ = 'jie'
 
-import time, sys, datetime, os, shutil, zipfile
+import time
+import sys
+import datetime
+import os
+import shutil
+import zipfile
 from flask_rq import job
 
 from .. import app, db
@@ -9,6 +14,7 @@ from ..models import Job
 from postorder import xls_to_orders
 
 batch_order_queue = app.config['BATCH_ORDER_QUEUE']
+
 
 @job(batch_order_queue)
 def batch_order(job_id, input_file, workdir):
@@ -35,19 +41,20 @@ def batch_order(job_id, input_file, workdir):
                 percent = int(percent)
                 if percent > job.percentage:
                     job.percentage = percent
-                    #db.session.commit()
+                    # db.session.commit()
 
             xls_to_orders(input_file, outdir, tmpdir, percent_callback, job)
 
             outfile = os.path.abspath(outfile)
             os.chdir(outdir)
-            zf = zipfile.ZipFile(outfile, "w", compression=zipfile.ZIP_DEFLATED)
+            zf = zipfile.ZipFile(
+                outfile, "w", compression=zipfile.ZIP_DEFLATED)
             for root, dirs, files in os.walk("."):
                 if root <> ".":
                     zf.write(root)
                 for filename in files:
                     filepath = os.path.join(root, filename)
-                    zf.write(filepath)
+                    zf.write(filepath, arcname=filepath.decode('utf8'))
             zf.close()
 
             job.completion_time = datetime.datetime.utcnow()
