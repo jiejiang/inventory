@@ -147,8 +147,10 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     package_type, order = fetch_ticket_number(n_row, receiver_city)
     order.used = True
     order.used_time = datetime.datetime.utcnow()
-    order.sender = ", ".join((sender_name, sender_address, sender_phone))
-    order.receiver = ", ".join((receiver_name, receiver_address, receiver_city, receiver_post_code, receiver_mobile))
+    order.sender_address = ", ".join((sender_name, sender_address, sender_phone))
+    order.receiver_address = ", ".join((receiver_address, receiver_city, receiver_post_code, receiver_mobile))
+    order.receiver_id_number = id_number
+    order.receiver_name = receiver_name
     if job:
         order.job = job
     ticket_number = order.order_number

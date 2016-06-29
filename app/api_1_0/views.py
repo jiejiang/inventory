@@ -87,7 +87,8 @@ class JobAPI(Resource):
                   'creationTime': fields.DateTime(dt_format='iso8601', attribute='creation_time'),
                   'completionTime': fields.DateTime(dt_format='iso8601', attribute='completion_time'),
                   'percentage': fields.String, 'message': fields.String,
-                  'finished': fields.Boolean(attribute='finished'), 'success': fields.Boolean(attribute='success')}
+                  'finished': fields.Boolean(attribute='finished'), 'success': fields.Boolean(attribute='success'),
+                  'order_numbers': fields.Nested({v: fields.List(fields.String) for k, v in Order.Type.types.items()})}
 
     @marshal_with(fields)
     def get(self, job_id):
@@ -136,7 +137,14 @@ class OrderListAPI(Resource):
             abort(500, message="File not attached!")
 
     def get(self):
-        pass
+        stats = {}
+        for type_id, type_name in Order.Type.types.items():
+            query = Order.query.filter_by(type=type_id)
+            stats[type_name] = {
+                'unused': query.filter_by(used=False).count(),
+                'used': query.filter_by(used=True).count(),
+            }
+        return { 'stats' :stats }
 
 api.add_resource(BatchOrderListAPI, '/batch-order')
 api.add_resource(JobAPI, '/job/<job_id>')

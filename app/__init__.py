@@ -74,6 +74,9 @@ def create_app():
     from front_end import front_end
     app.register_blueprint(front_end, url_prefix='/app')
 
+    from .admin import admin
+    admin.init_app(app)
+
     return app
 
 app = create_app()

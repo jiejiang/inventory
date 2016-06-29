@@ -33,6 +33,7 @@ postOrdersApp.controller('NewOrderNumbers', ['$scope', 'Upload', '$location', '$
                 }).error(function (data) {
                     $log.log(data);
                     $scope.addAlert(data.message);
+                    $scope.running = false;
                 });
             }) ();
         }

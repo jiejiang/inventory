@@ -1,9 +1,24 @@
 'use strict';
 
-postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$location', '$timeout', '$window', '$log',
-    function($scope, Upload, BatchOrderJob, $location, $timeout, $window, $log) {
+postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$location', '$timeout', '$window', '$log', 'Restangular',
+    function($scope, Upload, BatchOrderJob, $location, $timeout, $window, $log, Restangular) {
 
     $scope.job = BatchOrderJob;
+
+    $scope.hrefs = ['/admin/admin.unused_standard_order', '/admin/admin.unused_fast_track_order'];
+
+    $scope.query_stats = function() {
+        Restangular.one('orders').get().then(
+            function(data){
+                $scope.stats = data.stats;
+            },
+            function(data){
+                $scope.clearAlerts();
+                $scope.addAlert("Connection error, please refresh the page...");
+            });
+    };
+
+    $scope.query_stats();
 
     $scope.$watch('file', function () {
         $scope.clearAlerts();
@@ -32,6 +47,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
                         $scope.job.get().then(
                             function(data){
                                 $scope.job.setData(data);
+                                $log.log($scope.job.order_numbers);
                                 if (!data.finished && $scope.job.id) {
                                     $timeout(tick, 3000);
                                 } else {
@@ -41,6 +57,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
 
                                     }
                                 }
+                                $scope.query_stats();
                             },
                             function(data){
                                 if ($scope.job.id) {
@@ -52,9 +69,9 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
                     })();
 
                 }).error(function (data) {
-                    $log.log(data);
                     $scope.job.clear();
                     $scope.addAlert(data.message);
+                    $scope.query_stats();
                 });
             }) ();
         }

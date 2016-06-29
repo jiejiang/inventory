@@ -1,5 +1,5 @@
-__author__ = 'jie'
 # -*- coding: utf-8 -*-
+__author__ = 'jie'
 
 import uuid, datetime, re, sys
 from sqlalchemy import desc, asc
@@ -57,6 +57,12 @@ class Job(db.Model):
         self.status = Job.Status.DELETED
         db.session.commit()
 
+    @property
+    def order_numbers(self):
+        order_numbers = {}
+        for type_id, type_name in Order.Type.types.items():
+            order_numbers[type_name] = [order.order_number for order in Order.query.filter_by(type=type_id, job_id=self.id).all()]
+        return order_numbers
 
 class City(db.Model):
     __tablename__ = "city"
@@ -105,7 +111,7 @@ class City(db.Model):
                         parent = cities[parent_id]
                         city = City(name = name, parent_id=parent.id, type=type)
                     else:
-                        assert(type == City.Type.COUNTRY)
+                        assert(type == City.Type.NATION)
                         city = City(name = name, type=type)
                     db.session.add(city)
                     db.session.commit()
@@ -158,8 +164,10 @@ class Order(db.Model):
     upload_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     used = db.Column(db.Boolean, index=True, nullable=False, default=False)
     used_time = db.Column(db.DateTime)
-    sender = db.Column(db.String(256))
-    receiver = db.Column(db.String(256))
+    sender_address = db.Column(db.String(256))
+    receiver_address = db.Column(db.String(256))
+    receiver_name = db.Column(db.String(32))
+    receiver_id_number = db.Column(db.String(64))
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=True)
 
     class Type:
@@ -170,6 +178,13 @@ class Order(db.Model):
             STANDARD : u"标准单号",
             FAST_TRACK : u"快递包裹",
         }
+
+    @property
+    def type_name(self):
+        if self.type in Order.Type.types:
+            return Order.Type.types[self.type]
+        else:
+            raise Exception, "Invalid order type: %d" % self.type
 
     @staticmethod
     def is_order_number_valid(type, order_number):

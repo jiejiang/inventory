@@ -9,6 +9,7 @@ cssselect==0.9.1
 dominate==2.2.0
 et-xmlfile==1.0.1
 Flask==0.11.1
+Flask-Admin==1.4.2
 Flask-Assets==0.11
 Flask-Bootstrap==3.3.6.0
 Flask-Bower==1.2.1
@@ -50,4 +51,5 @@ Wand==0.4.3
 WeasyPrint==0.28
 webassets==0.11.1
 Werkzeug==0.11.10
+WTForms==2.1
 xlrd==1.0.0
