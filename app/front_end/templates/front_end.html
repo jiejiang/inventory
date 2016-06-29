@@ -38,6 +38,10 @@
                         <a href="#/batch-order" ng-class="{active: isActive('/batch-order')}"><i class="fa fa-file-excel-o"></i> Excel Batch Order</a>
                     </li>
 
+                    <li>
+                        <a href="#/new-order-numbers" ng-class="{active: isActive('/new-order-numbers')}"><i class="fa fa-upload"></i> New Order Numbers</a>
+                    </li>
+
                     <!--
                     <li>
                         <a href="#"><i class="fa fa-files-o fa-fw"></i> <span class="fa arrow"></span></a>
@@ -98,7 +102,8 @@
 
     {% assets filters="jsmin", output="gen/postorders_front_end.js",
         "front_end/js/main.js", "front_end/js/controllers/frame.js",
-        "front_end/js/controllers/batch-order.js", "front_end/js/factories/batch-order.js" %}
+        "front_end/js/controllers/batch-order.js", "front_end/js/factories/batch-order.js",
+        "front_end/js/controllers/new-order-numbers.js" %}
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
 

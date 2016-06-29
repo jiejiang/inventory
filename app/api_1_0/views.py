@@ -1,15 +1,17 @@
 __author__ = 'jie'
 
-import os, sys, shutil, time, json, datetime, urllib
-from werkzeug.utils import secure_filename
-from flask import request, current_app, send_from_directory, Response, make_response, g
+import sys
+
+import os
+from flask import request, current_app, Response
 from flask_restful import Resource, fields, marshal_with
 from flask_restful import abort, reqparse
 from redis import ConnectionError
 from sqlalchemy.orm import exc
-
+import pandas as pd
 from . import api
-from ..models import Job
+from .. import db
+from ..models import Job, Order
 
 STREAM_BUF_SIZE = 2048
 
@@ -92,5 +94,50 @@ class JobAPI(Resource):
         job = get_object_or_404(Job, Job.uuid==job_id)
         return job
 
+
+class OrderListAPI(Resource):
+    def post(self):
+        file = request.files['file']
+        if file:
+            try:
+                ext = file.filename.split('.')[-1].lower()
+                if ext <> "xlsx":
+                    raise Exception, 'Only .xlt file is supported!'
+
+                df = pd.read_excel(file)
+
+                inserted_order_numbers = {}
+                invalid_order_numbers = []
+                existing_order_numbers = []
+                for type_int, type_string in Order.Type.types.items():
+                    inserted_order_numbers[type_string] = []
+                    if type_string in df.columns:
+                        for order_number in df[type_string]:
+                            order_number = str(order_number).strip()
+                            if order_number:
+                                if not Order.is_order_number_valid(type_int, order_number):
+                                    invalid_order_numbers.append(order_number)
+                                    continue
+                                if Order.query.filter_by(order_number=order_number).scalar() is not None:
+                                    existing_order_numbers.append(order_number)
+                                    continue
+                                order = Order(order_number=order_number, type=type_int)
+                                db.session.add(order)
+                                inserted_order_numbers[type_string].append(order_number)
+                db.session.commit()
+                return {'inserted_order_numbers': inserted_order_numbers, 'invalid_order_numbers' : invalid_order_numbers,
+                        'existing_order_numbers' : existing_order_numbers}
+            except Exception, inst:
+                db.session.rollback()
+                import traceback
+                traceback.print_exc(sys.stderr)
+                abort(500, message=str(inst))
+        else:
+            abort(500, message="File not attached!")
+
+    def get(self):
+        pass
+
 api.add_resource(BatchOrderListAPI, '/batch-order')
 api.add_resource(JobAPI, '/job/<job_id>')
+api.add_resource(OrderListAPI, '/orders')

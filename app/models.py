@@ -2,6 +2,7 @@ __author__ = 'jie'
 # -*- coding: utf-8 -*-
 
 import uuid, datetime, re, sys
+from sqlalchemy import desc, asc
 from . import db
 
 class Job(db.Model):
@@ -12,6 +13,7 @@ class Job(db.Model):
     creation_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     completion_time = db.Column(db.DateTime, default=None)
     message = db.Column(db.Text)
+    orders = db.relationship("Order", backref='job', lazy='dynamic')
 
     class Status:
         WAITING = 0
@@ -146,3 +148,36 @@ class City(db.Model):
                 if city:
                     return city
         return None
+
+
+class Order(db.Model):
+    __tablename__ = "order"
+    id = db.Column(db.Integer, primary_key=True)
+    order_number = db.Column(db.String(128), unique=True, nullable=False, index=True)
+    type = db.Column(db.Integer, index=True, nullable=False)
+    upload_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    used = db.Column(db.Boolean, index=True, nullable=False, default=False)
+    used_time = db.Column(db.DateTime)
+    sender = db.Column(db.String(256))
+    receiver = db.Column(db.String(256))
+    job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=True)
+
+    class Type:
+        STANDARD = 1
+        FAST_TRACK = 9
+
+        types = {
+            STANDARD : u"标准单号",
+            FAST_TRACK : u"快递包裹",
+        }
+
+    @staticmethod
+    def is_order_number_valid(type, order_number):
+        return (type == Order.Type.STANDARD and order_number.startswith("1")) or \
+               (type == Order.Type.FAST_TRACK and order_number.startswith("9"))
+
+    @staticmethod
+    def pick_first(type):
+        if not type in Order.Type.types:
+            raise Exception, "Invalid type to choose from: %s" % type
+        return Order.query.filter_by(type=type, used=False).order_by(asc(Order.id)).first()

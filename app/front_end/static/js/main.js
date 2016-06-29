@@ -19,6 +19,10 @@ window.postOrdersApp = angular.module('postOrdersApp',
         templateUrl: partialsDir + 'batch-order.html',
         controller: 'BatchOrder'
     })
+    .when('/new-order-numbers', {
+        templateUrl: partialsDir + 'new-order-numbers.html',
+        controller: 'NewOrderNumbers'
+    })
     .otherwise({redirectTo: '/batch-order'});
 }]);
 

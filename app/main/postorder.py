@@ -21,7 +21,8 @@ from barcode.writer import ImageWriter
 from weasyprint import HTML, CSS
 from wand.image import Image
 
-from ..models import City
+from ..models import City, Order
+from .. import db
 
 Code128 = barcode.get_barcode_class('code128')
 
@@ -102,6 +103,8 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
     env = Environment(loader=FileSystemLoader('templates'))
     template = env.get_template('barcode.html')
     context['time'] = datetime.datetime.now()
+    context['bot_image'] = bot_image
+    context['top_image'] = top_image
     output_from_parsed_template = template.render(context)
     #
     # with codecs.open(filename + ".html", "wb", encoding='utf8') as fh:
@@ -118,10 +121,12 @@ def fetch_ticket_number(n_row, receiver_city):
     if not province.name in PROVINCE_INFO_MAP:
         raise Exception, "Post to province %s is not supported: %s at row %d" % (city_name, n_row)
     info = PROVINCE_INFO_MAP[province.name]
-    return info['package_type'], \
-           "%d%s" % (info['ticket_initial'], ''.join([random.choice(string.digits) for _ in range(8)]))
+    order = Order.pick_first(info['ticket_initial'])
+    if order is None:
+        raise Exception, u"订单号不足, 订单类型:%s" % Order.Type.types[info['ticket_initial']]
+    return info['package_type'], order
 
-def process_row(n_row, in_row, barcode_dir, tmpdir):
+def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
     c_data = []
     sender_name = in_row[u'发件人名字']
@@ -139,7 +144,14 @@ def process_row(n_row, in_row, barcode_dir, tmpdir):
     height = in_row[u'高（厘米）']
     id_number = str(in_row[u'身份证号(EMS需要)'])
 
-    package_type, ticket_number = fetch_ticket_number(n_row, receiver_city)
+    package_type, order = fetch_ticket_number(n_row, receiver_city)
+    order.used = True
+    order.used_time = datetime.datetime.utcnow()
+    order.sender = ", ".join((sender_name, sender_address, sender_phone))
+    order.receiver = ", ".join((receiver_name, receiver_address, receiver_city, receiver_post_code, receiver_mobile))
+    if job:
+        order.job = job
+    ticket_number = order.order_number
 
     total_price = 0
     item_names = []
@@ -200,7 +212,7 @@ def normalize_columns(in_df):
     in_df.columns = map(lambda x: "".join(x.strip().split()), in_df.columns)
 
 
-def xls_to_orders(input, output, tmpdir, percent_callback=None):
+def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     if percent_callback:
         percent_callback(0)
     in_df = pd.read_excel(input)
@@ -231,16 +243,21 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None):
     if not os.path.exists(barcode_dir):
         os.makedirs(barcode_dir)
 
-    for index, in_row in in_df.iterrows():
-        p_data, c_data = process_row(index, in_row, barcode_dir, tmpdir)
-        package_data.append(p_data)
-        customs_data.append(c_data)
-        if percent_callback:
-            percent_callback(int(index * 100.0 / len(in_df.index)))
+    try:
+        for index, in_row in in_df.iterrows():
+            p_data, c_data = process_row(index, in_row, barcode_dir, tmpdir, job)
+            package_data.append(p_data)
+            customs_data.append(c_data)
+            if percent_callback:
+                percent_callback(int(index * 100.0 / len(in_df.index)))
+        db.session.commit()
+    except Exception, inst:
+        db.session.rollback()
+        raise inst
 
     package_final_df = pd.concat(package_data, ignore_index=True)
     package_final_df[u'税号'] = '01010700'
-    package_final_df.to_excel(os.path.join(output, u"机场装箱单.xlsx"),
+    package_final_df.to_excel(os.path.join(output, u"机场装箱单.xlsx".encode('utf8')),
                               columns=package_columns)
 
     customs_final_df = pd.concat(customs_data, ignore_index=True)
@@ -272,7 +289,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None):
     customs_final_df[u'商品毛重'] = 4.35
     customs_final_df[u'仓单申报类型N表示新增M修改'] = 'N'
 
-    customs_final_df.to_excel(os.path.join(output, u"申报表格.xlsx"),
+    customs_final_df.to_excel(os.path.join(output, u"申报表格.xlsx".encode('utf8')),
                               columns=customs_columns, index=False)
 
     if percent_callback:

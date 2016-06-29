@@ -35,9 +35,9 @@ def batch_order(job_id, input_file, workdir):
                 percent = int(percent)
                 if percent > job.percentage:
                     job.percentage = percent
-                    db.session.commit()
+                    #db.session.commit()
 
-            xls_to_orders(input_file, outdir, tmpdir, percent_callback)
+            xls_to_orders(input_file, outdir, tmpdir, percent_callback, job)
 
             outfile = os.path.abspath(outfile)
             os.chdir(outdir)
