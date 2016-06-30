@@ -22,4 +22,7 @@ postOrdersApp.controller('Frame', ['$scope', '$location', '$window', '$filter', 
     }
 
     $scope.api_prefix = angular.element('body').attr('api_prefix');
+
+    $scope.route_prefix = angular.element('body').attr('route_prefix');
+
 }]);

@@ -7,7 +7,7 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('bower.static', filename='angular-bootstrap/ui-bootstrap-csp.css') }}">
 {% endblock %}
 
-{% block body_attribs %} ng-app="postOrdersApp" ng-strict-di api_prefix="{{ api_prefix }}" {% endblock %}
+{% block body_attribs %} ng-app="postOrdersApp" ng-strict-di api_prefix="{{ api_prefix }}" route_prefix="{{route_prefix}}" {% endblock %}
 
 {% block content %}
 <div id="wrapper" ng-controller="Frame">
@@ -43,7 +43,7 @@
                     </li>
 
                     <li>
-                        <a href="/postal/admin/admin.used_order"><i class="fa fa-book"></i> History</a>
+                        <a href="/{[route_prefix]}/admin/admin.success_jobs"><i class="fa fa-book"></i> History</a>
                     </li>
 
                     <!--

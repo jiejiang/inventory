@@ -8,4 +8,4 @@ def index():
     api_prefix = "/api/v1.0"
     if 'ROUTE_PREFIX' in current_app.config:
         api_prefix = "/" + current_app.config['ROUTE_PREFIX'] + api_prefix
-    return render_template('front_end.html', api_prefix=api_prefix)
+    return render_template('front_end.html', api_prefix=api_prefix, route_prefix=current_app.config['ROUTE_PREFIX'])

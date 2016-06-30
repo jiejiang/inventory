@@ -185,7 +185,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         p_data.append([
             ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
             receiver_post_code, receiver_address, item_name, item_count, item_price, package_weight, item_name,
-            item_count, unit_price, "GBP", id_number
+            item_count, unit_price, u"元", id_number
         ])
         c_data.append([
             ticket_number, item_count, item_name,
@@ -194,13 +194,17 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
             "%.1f" % item_weight_convert, "%.0f" % item_price
         ])
 
+    total_price = "%.2f" % total_price
+    if total_price.endswith(".00") and len(total_price) > 3:
+        total_price = total_price[:-3]
+
     item_names = ", ".join(item_names)
 
     generate_pdf(ticket_number, os.path.join(barcode_dir, '%s.pdf' % ticket_number), locals(), tmpdir)
 
     return pd.DataFrame(p_data, columns=[
         u'快件单号', u'发件人', u'发件人地址', u'电话号码', u'收件人', u'电话号码.1', u'城市',
-        u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（GBP）', u'毛重（KG）', u'物品名称',
+        u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（元）', u'毛重（KG）', u'物品名称',
         u'数量.1', u'单价', u'币别', u'备注'
     ]), pd.DataFrame(c_data, columns=[
         u'企业运单编号', u'箱件数', u'主要商品',
@@ -222,7 +226,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
 
     package_columns = [u"报关单号", u'总运单号', u'袋号', u'快件单号', u'发件人', u'发件人地址',
                        u'电话号码', u'收件人', u'电话号码.1', u'城市', u'邮编', u'收件人地址', u'内件名称',
-                       u'数量', u'总价（GBP）', u'毛重（KG）', u'税号', u'物品名称', u'品牌', u'数量.1',
+                       u'数量', u'总价（元）', u'毛重（KG）', u'税号', u'物品名称', u'品牌', u'数量.1',
                        u'单位', u'单价', u'币别', u'备注']
 
     customs_columns = [u'订单编号', u'物流企业备案号', u'电商平台备案号', u'企业运单编号', u'物流状态', u'运费', u'运费币制',

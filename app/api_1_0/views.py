@@ -144,7 +144,8 @@ class OrderListAPI(Resource):
                 'unused': query.filter_by(used=False).count(),
                 'used': query.filter_by(used=True).count(),
             }
-        return { 'stats' :stats }
+        used_count = Order.query.filter_by(used=True).count()
+        return { 'stats' :stats, 'used_count' : used_count }
 
 api.add_resource(BatchOrderListAPI, '/batch-order')
 api.add_resource(JobAPI, '/job/<job_id>')

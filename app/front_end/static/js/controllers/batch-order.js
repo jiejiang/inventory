@@ -5,12 +5,14 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
 
     $scope.job = BatchOrderJob;
 
-    $scope.hrefs = ['/postal/admin/admin.unused_standard_order', '/postal/admin/admin.unused_fast_track_order'];
+    $scope.hrefs = ['/' + $scope.$parent.route_prefix + '/admin/admin.unused_standard_order',
+                    '/' + $scope.$parent.route_prefix + '/admin/admin.unused_fast_track_order'];
 
     $scope.query_stats = function() {
         Restangular.one('orders').get().then(
             function(data){
                 $scope.stats = data.stats;
+                $scope.used_count = data.used_count;
             },
             function(data){
                 $scope.clearAlerts();
