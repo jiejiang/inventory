@@ -24,7 +24,6 @@ def get_object_or_404(model, *criterion):
 
 file_download_parser = reqparse.RequestParser()
 file_download_parser.add_argument('id', type=str, help="Job ID!")
-file_download_parser.add_argument('filename', type=str, help="File Name!")
 
 class BatchOrderListAPI(Resource):
     def post(self):
