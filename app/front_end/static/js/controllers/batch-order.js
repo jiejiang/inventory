@@ -4,6 +4,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
     function($scope, Upload, BatchOrderJob, $location, $timeout, $window, $log, Restangular) {
 
     $scope.job = BatchOrderJob;
+    $scope.running = false;
 
     $scope.hrefs = ['/' + $scope.$parent.route_prefix + '/admin/admin.unused_standard_order',
                     '/' + $scope.$parent.route_prefix + '/admin/admin.unused_fast_track_order'];
@@ -30,6 +31,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
     $scope.upload = function (file) {
         if (file != undefined) {
             $scope.job.clear();
+            $scope.running = true;
 
             (function() {
                 $scope.job.upload_file = { name: file.name, percentage: 0 };
@@ -52,6 +54,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
                                 if (!data.finished && $scope.job.id) {
                                     $timeout(tick, 3000);
                                 } else {
+                                    $scope.running = false;
                                     if (!data.success) {
                                         $scope.addAlert(data.message);
                                     } else {
@@ -73,6 +76,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
                     $scope.job.clear();
                     $scope.addAlert(data.message);
                     $scope.query_stats();
+                    $scope.running = false;
                 });
             }) ();
         }
