@@ -131,6 +131,11 @@ def fetch_ticket_number(n_row, receiver_city):
     return info['package_type'], order
 
 
+def lookup_item_info(item_name):
+
+    return sub_total_price, net_weight, gross_weight, cny_unit_price, item_full_name
+
+
 def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
     c_data = []
@@ -170,33 +175,35 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         item_count = in_row[u'数量%s' % suffix]
         unit_price = in_row[u'物品单价（英镑）%s' % suffix]
 
-        m = ITEM_NAME_RE.match(item_name)
-        if not m:
-            raise Exception, "Item name format wrong: %s at row %d" % (item_name, n_row)
-        if m.group(3):
-            item_weight = '900'
-            item_name += "%sg" % item_weight
-        elif m.group(4):
-            item_weight = '800'
-            item_name += "%sg" % item_weight
-        else:
-            item_weight = int(m.group(5))
+        # m = ITEM_NAME_RE.match(item_name)
+        # if not m:
+        #     raise Exception, "Item name format wrong: %s at row %d" % (item_name, n_row)
+        # if m.group(3):
+        #     item_weight = '900'
+        #     item_name += "%sg" % item_weight
+        # elif m.group(4):
+        #     item_weight = '800'
+        #     item_name += "%sg" % item_weight
+        # else:
+        #     item_weight = int(m.group(5))
+        #
+        # item_weight_convert = int(item_weight) * item_count / 1000.0
+        # item_price = item_weight_convert * 90
+        sub_total_price, net_weight, gross_weight, cny_unit_price, item_full_name = lookup_item_info(item_name)
 
-        item_weight_convert = int(item_weight) * item_count / 1000.0
-        item_price = item_weight_convert * 90
-        item_names.append(item_name)
-        total_price += item_price
+        item_names.append(item_full_name)
+        total_price += sub_total_price
 
         p_data.append([
             ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
-            receiver_post_code, receiver_address, item_name, item_count, item_price, package_weight, item_name,
-            item_count, unit_price, u"元", id_number
+            receiver_post_code, receiver_address, item_name, item_count, sub_total_price, gross_weight, item_name,
+            item_count, cny_unit_price, u"CNY", id_number
         ])
         c_data.append([
-            ticket_number, item_count, item_name,
+            ticket_number, net_weight, gross_weight, item_count, item_full_name,
             receiver_name, receiver_post_code, receiver_address, receiver_mobile, id_number,
             sender_name, receiver_post_code, sender_address, sender_phone,
-            "%.1f" % item_weight_convert, "%.0f" % item_price
+            net_weight, sub_total_price, gross_weight
         ])
 
     total_price = "%.2f" % total_price
@@ -212,10 +219,10 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（元）', u'毛重（KG）', u'物品名称',
         u'数量.1', u'单价', u'币别', u'备注'
     ]), pd.DataFrame(c_data, columns=[
-        u'企业运单编号', u'箱件数', u'主要商品',
+        u'企业运单编号', u'分运单净重', u'分运单毛重', u'箱件数', u'主要商品',
         u'收件人姓名', u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件号码',
         u'发货人名称', u'发货人省市区代码', u'发货人地址', u'发货人电话',
-        u'净重/数量', u'商品总价',
+        u'净重/数量', u'商品总价', u'商品毛重'
     ])
 
 
@@ -274,6 +281,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
 
     package_final_df = pd.concat(package_data, ignore_index=True)
     package_final_df[u'税号'] = '01010700'
+    package_final_df[u'单位'] = u'千克'
     package_final_df.to_excel(os.path.join(output, u"机场装箱单.xlsx".encode('utf8')),
                               columns=package_columns)
 
@@ -282,13 +290,11 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     customs_final_df[u'电商平台备案号'] = 'PTE681320150000004'
     customs_final_df[u'物流状态'] = '0'
     customs_final_df[u'运费'] = 0
-    customs_final_df[u'运费币制'] = '142'
+    customs_final_df[u'运费币制'] = '303'
     customs_final_df[u'运输方式'] = '4'
     customs_final_df[u'包装种类'] = '4'
     customs_final_df[u'保价费'] = 0
-    customs_final_df[u'保价费币制'] = '142'
-    customs_final_df[u'分运单净重'] = 4
-    customs_final_df[u'分运单毛重'] = 4.35
+    customs_final_df[u'保价费币制'] = '303'
     customs_final_df[u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码'] = '6813'
     customs_final_df[u'收件人所在国家(地区）代码'] = '142'
     customs_final_df[u'收件人证件类型'] = '1'
@@ -303,7 +309,6 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     customs_final_df[u'商品币制'] = '142'
     customs_final_df[u'进出口标识'] = 'I'
     customs_final_df[u'码头/货场代码（为物流监控备用）'] = '6813'
-    customs_final_df[u'商品毛重'] = 4.35
     customs_final_df[u'仓单申报类型N表示新增M修改'] = 'N'
 
     customs_final_df.to_excel(os.path.join(output, u"申报表格.xlsx".encode('utf8')),
