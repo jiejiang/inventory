@@ -49,7 +49,6 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
                         $scope.job.get().then(
                             function(data){
                                 $scope.job.setData(data);
-                                $log.log($scope.job.order_numbers);
                                 if (!data.finished && $scope.job.id) {
                                     $timeout(tick, 3000);
                                 } else {

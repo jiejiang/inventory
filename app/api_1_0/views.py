@@ -2,7 +2,7 @@ __author__ = 'jie'
 
 import sys
 
-import os
+import os, datetime
 from flask import request, current_app, Response
 from flask_restful import Resource, fields, marshal_with
 from flask_restful import abort, reqparse
@@ -93,7 +93,9 @@ class JobAPI(Resource):
     @marshal_with(fields)
     def get(self, job_id):
         job = get_object_or_404(Job, Job.uuid==job_id)
-        return job
+        return job, 200, {'Last-Modified': datetime.datetime.now(),
+                          'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
+                          'Pragma' : 'no-cache', 'Expires': -1}
 
 
 class OrderListAPI(Resource):

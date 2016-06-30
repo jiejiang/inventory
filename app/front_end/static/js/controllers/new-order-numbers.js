@@ -31,7 +31,6 @@ postOrdersApp.controller('NewOrderNumbers', ['$scope', 'Upload', '$location', '$
                     $scope.existing_order_numbers = data.existing_order_numbers;
                     $scope.running = false;
                 }).error(function (data) {
-                    $log.log(data);
                     $scope.addAlert(data.message);
                     $scope.running = false;
                 });
