@@ -8,9 +8,11 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('bower.static', filename='metisMenu/dist/metisMenu.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('bower.static', filename='startbootstrap-sb-admin-2/dist/css/sb-admin-2.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('bower.static', filename='font-awesome/css/font-awesome.min.css') }}">
+
     {% assets filters="cssmin", output="gen/postorders.css", "css/postorders.css" %}
         <link rel="stylesheet" type="text/css" href="{{ ASSET_URL }}">
     {% endassets %}
+    <link rel="shortcut icon" href="{{ url_for('static', filename='icon/favicon.ico') }}" type="image/x-icon">
 {% endblock %}
 
 {% block scripts %}

@@ -61,6 +61,7 @@ def batch_order(job_id, input_file, workdir):
             job.status = Job.Status.COMPLETED
             db.session.commit()
         except Exception, inst:
+            db.session.rollback()
             import traceback
             traceback.print_exc(sys.stderr)
             job.message = "Format error: %s" % inst.message.encode('utf8')

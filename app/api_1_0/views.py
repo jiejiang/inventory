@@ -12,6 +12,7 @@ import pandas as pd
 from . import api
 from .. import db
 from ..models import Job, Order
+from ..util import time_to_filename
 
 STREAM_BUF_SIZE = 2048
 
@@ -66,7 +67,8 @@ class BatchOrderListAPI(Resource):
     def get(self):
         args = file_download_parser.parse_args()
         filename = os.path.join(current_app.config['DOWNLOAD_FOLDER'], args['id'], args['id'] + '.zip')
-        download_filename = args['filename'] + '.zip'
+        job = get_object_or_404(Job, Job.uuid==args['id'])
+        download_filename = time_to_filename(job.completion_time) + '.zip'
         if not os.path.exists(filename):
             abort(404, message="File not exist")
 

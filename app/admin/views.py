@@ -4,17 +4,11 @@ __author__ = 'jie'
 from flask_admin.contrib import sqla
 from flask_admin.menu import MenuLink
 from sqlalchemy import func, desc, or_
-import pytz
-from tzlocal import get_localzone
 
 from .. import db
 from . import admin
 from ..models import Order, Job
-
-def time_format(time_data):
-    if time_data is None:
-        return None
-    return time_data.replace(tzinfo=pytz.utc).astimezone(tz=get_localzone()).strftime("%a, %H:%M, %d/%m/%Y")
+from ..util import time_format
 
 class JobAdmin(sqla.ModelView):
     can_delete = False

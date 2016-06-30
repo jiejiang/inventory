@@ -20,6 +20,7 @@ import barcode
 from barcode.writer import ImageWriter
 from weasyprint import HTML, CSS
 from wand.image import Image
+from PyPDF2 import PdfFileMerger, PdfFileReader
 
 from ..models import City, Order
 from .. import db
@@ -62,8 +63,10 @@ PROVINCE_INFO_MAP = {
     u"新疆": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
 }
 
-ITEM_NAME_RE = re.compile(ur"^.*?((([123一二三])|([4四]))段|(\d+)g)$", flags=re.U|re.I)
-#ITEM_NAME_RE = re.compile(ur"^.*?1段$", flags=re.U|re.I)
+ITEM_NAME_RE = re.compile(ur"^.*?((([123一二三])|([4四]))段|(\d+)g)$", flags=re.U | re.I)
+
+
+# ITEM_NAME_RE = re.compile(ur"^.*?1段$", flags=re.U|re.I)
 
 def generate_pdf(ticket_number, filename, context, tmpdir):
     bot_image = os.path.join(tmpdir, 'bot_barcode_trim.png')
@@ -113,6 +116,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
     HTML(string=output_from_parsed_template, base_url='.').write_pdf(
         filename, stylesheets=["static/css/style.css"])
 
+
 def fetch_ticket_number(n_row, receiver_city):
     city_name = "".join(receiver_city.strip().split())
     province = City.find_province(city_name)
@@ -125,6 +129,7 @@ def fetch_ticket_number(n_row, receiver_city):
     if order is None:
         raise Exception, u"订单号不足, 订单类型:%s" % Order.Type.types[info['ticket_initial']]
     return info['package_type'], order
+
 
 def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
@@ -202,7 +207,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
 
     generate_pdf(ticket_number, os.path.join(barcode_dir, '%s.pdf' % ticket_number), locals(), tmpdir)
 
-    return pd.DataFrame(p_data, columns=[
+    return ticket_number, pd.DataFrame(p_data, columns=[
         u'快件单号', u'发件人', u'发件人地址', u'电话号码', u'收件人', u'电话号码.1', u'城市',
         u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（元）', u'毛重（KG）', u'物品名称',
         u'数量.1', u'单价', u'币别', u'备注'
@@ -249,17 +254,23 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     if not os.path.exists(barcode_dir):
         os.makedirs(barcode_dir)
 
-    try:
-        for index, in_row in in_df.iterrows():
-            p_data, c_data = process_row(index, in_row, barcode_dir, tmpdir, job)
-            package_data.append(p_data)
-            customs_data.append(c_data)
-            if percent_callback:
-                percent_callback(int(index * 100.0 / len(in_df.index)))
-        db.session.commit()
-    except Exception, inst:
-        db.session.rollback()
-        raise inst
+    ticket_numbers = []
+    for index, in_row in in_df.iterrows():
+        ticket_number, p_data, c_data = process_row(index, in_row, barcode_dir, tmpdir, job)
+        ticket_numbers.append(ticket_number)
+        package_data.append(p_data)
+        customs_data.append(c_data)
+        if percent_callback:
+            percent_callback(int(index * 100.0 / len(in_df.index)))
+
+    merger = PdfFileMerger()
+    for ticket_number in ticket_numbers:
+        pdf_file = os.path.join(barcode_dir, "%s.pdf" % ticket_number)
+        if not os.path.exists(pdf_file):
+            raise Exception, "Failed to generate pdf: %s" % ticket_number
+        merger.append(PdfFileReader(file(pdf_file, 'rb')))
+    merger.write(os.path.join(output, u"面单_%d页.pdf".encode('utf8') % len(ticket_numbers)))
+    shutil.rmtree(barcode_dir)
 
     package_final_df = pd.concat(package_data, ignore_index=True)
     package_final_df[u'税号'] = '01010700'
@@ -301,6 +312,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     if percent_callback:
         percent_callback(100)
 
+
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-i", "--input", dest="input",
@@ -320,8 +332,14 @@ if __name__ == "__main__":
         os.makedirs(options.output)
 
     try:
-        xls_to_orders(options.input, options.output, options.tmpdir)
+        try:
+            xls_to_orders(options.input, options.output, options.tmpdir)
+            db.session.commit()
+        except Exception, inst:
+            db.session.rollback()
+            raise inst
     except Exception, inst:
         import traceback
+
         traceback.print_exc(sys.stderr)
         print >> sys.stderr, inst.message.encode('utf-8')

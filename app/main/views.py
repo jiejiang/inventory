@@ -4,6 +4,7 @@ import os
 from flask import redirect, url_for, current_app, abort, Response
 from . import main
 from ..models import Job
+from ..util import time_to_filename
 
 @main.route("/", methods=['GET', 'POST'])
 def index():
@@ -27,6 +28,6 @@ def download_job_file(job_id):
                 yield buf
                 buf = f.read(STREAM_BUF_SIZE)
     response = Response(generate(), mimetype='application/octet-stream',
-            headers={"Content-Disposition": "attachment;filename=%s" % "archive-%s.zip" % job.uuid})
+            headers={"Content-Disposition": "attachment;filename=%s" % "%s.zip" % time_to_filename(job.completion_time)})
 
     return response
