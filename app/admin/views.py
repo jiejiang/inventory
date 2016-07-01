@@ -37,6 +37,8 @@ class SuccessJobAdmin(JobAdmin):
         return self.session.query(func.count('*')).filter(self.model.status == Job.Status.COMPLETED)
 
 class FailedJobAdmin(JobAdmin):
+    column_default_sort = ('creation_time', True)
+
     def get_query(self):
         return self.session.query(self.model).filter(or_(self.model.status == Job.Status.FAILED, self.model.status == Job.Status.DELETED))
 

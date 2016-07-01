@@ -65,8 +65,83 @@ PROVINCE_INFO_MAP = {
 
 ITEM_NAME_RE = re.compile(ur"^.*?((([123一二三])|([4四]))段|(\d+)g)$", flags=re.U | re.I)
 
+ITEM_NAME_MAP_INFO = {
+    u"爱他美1段" : {
+        "net_weight": 0.9,
+        "gross_weights" : {
+            4: 4.35,
+        },
+        "price_per_kg" : 89.06,
+        "full_name" : u"爱他美奶粉1段900g",
+    },
+    u"爱他美2段" : {
+        "net_weight": 0.9,
+        "gross_weights" : {
+            4: 4.35,
+        },
+        "price_per_kg" : 89.06,
+        "full_name" : u"爱他美奶粉2段900g",
+    },
+    u"爱他美3段" : {
+        "net_weight": 0.9,
+        "gross_weights" : {
+            4: 4.35,
+        },
+        "price_per_kg" : 89.06,
+        "full_name" : u"爱他美奶粉3段900g",
+    },
+    u"爱他美4段" : {
+        "net_weight": 0.8,
+        "gross_weights" : {
+            4: 3.90,
+        },
+        "price_per_kg" : 86.50,
+        "full_name" : u"爱他美奶粉4段800g",
+    },
+    u"牛栏1段" : {
+        "net_weight": 0.9,
+        "gross_weights" : {
+            4: 4.35,
+        },
+        "price_per_kg" : 89.06,
+        "full_name" : u"牛栏奶粉1段900g",
+    },
+    u"牛栏2段" : {
+        "net_weight": 0.9,
+        "gross_weights" : {
+            4: 4.35,
+        },
+        "price_per_kg" : 86.50,
+        "full_name" : u"牛栏奶粉2段900g",
+    },
+    u"牛栏3段" : {
+        "net_weight": 0.9,
+        "gross_weights" : {
+            4: 4.35,
+        },
+        "price_per_kg" : 86.50,
+        "full_name" : u"牛栏奶粉3段900g",
+    },
+    u"牛栏4段" : {
+        "net_weight": 0.8,
+        "gross_weights" : {
+            4: 3.90,
+        },
+        "price_per_kg" : 94.30,
+        "full_name" : u"牛栏奶粉4段800g",
+    },
+}
 
-# ITEM_NAME_RE = re.compile(ur"^.*?1段$", flags=re.U|re.I)
+def calculate_item_info(n_row, item_name, item_count):
+    item_name = "".join(item_name.strip().split()).decode("utf8")
+    if not item_name in ITEM_NAME_MAP_INFO:
+        raise Exception, u"第%d行包含未注册商品名称: %s" % (n_row+1, item_name)
+    info = ITEM_NAME_MAP_INFO[item_name]
+    if not item_count in info["gross_weights"]:
+        raise Exception, u"第%d行商品[%s]包含未注册数量:%d" % (n_row+1, item_name, item_count)
+    return info["net_weight"] * item_count * info["price_per_kg"], info["net_weight"] * item_count, \
+           info["gross_weights"][item_count], info["price_per_kg"], \
+           info["full_name"] if "full_name" in info else item_name
 
 def generate_pdf(ticket_number, filename, context, tmpdir):
     bot_image = os.path.join(tmpdir, 'bot_barcode_trim.png')
@@ -130,12 +205,6 @@ def fetch_ticket_number(n_row, receiver_city):
         raise Exception, u"订单号不足, 订单类型:%s" % Order.Type.types[info['ticket_initial']]
     return info['package_type'], order
 
-
-def lookup_item_info(item_name):
-
-    return sub_total_price, net_weight, gross_weight, cny_unit_price, item_full_name
-
-
 def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
     c_data = []
@@ -168,12 +237,14 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     total_price = 0
     item_names = []
     for i in xrange(n_package):
-        if i > 5:
-            break
         suffix = "" if i == 0 else ".%d" % i
         item_name = in_row[u'申报物品%d(英文）' % (i + 1)]
         item_count = in_row[u'数量%s' % suffix]
         unit_price = in_row[u'物品单价（英镑）%s' % suffix]
+
+        if item_name is None or pd.isnull(item_name):
+            raise Exception, u"第%d行第%d个商品名称为空" % (n_row, i+1)
+        item_name = str(item_name).strip()
 
         # m = ITEM_NAME_RE.match(item_name)
         # if not m:
@@ -189,7 +260,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         #
         # item_weight_convert = int(item_weight) * item_count / 1000.0
         # item_price = item_weight_convert * 90
-        sub_total_price, net_weight, gross_weight, cny_unit_price, item_full_name = lookup_item_info(item_name)
+        sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name = calculate_item_info(n_row, item_name, 4)
 
         item_names.append(item_full_name)
         total_price += sub_total_price
@@ -197,13 +268,13 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         p_data.append([
             ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
             receiver_post_code, receiver_address, item_name, item_count, sub_total_price, gross_weight, item_name,
-            item_count, cny_unit_price, u"CNY", id_number
+            item_count, price_per_kg, u"CNY", id_number
         ])
         c_data.append([
             ticket_number, net_weight, gross_weight, item_count, item_full_name,
             receiver_name, receiver_post_code, receiver_address, receiver_mobile, id_number,
             sender_name, receiver_post_code, sender_address, sender_phone,
-            net_weight, sub_total_price, gross_weight
+            net_weight, sub_total_price, price_per_kg, gross_weight
         ])
 
     total_price = "%.2f" % total_price
@@ -222,7 +293,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         u'企业运单编号', u'分运单净重', u'分运单毛重', u'箱件数', u'主要商品',
         u'收件人姓名', u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件号码',
         u'发货人名称', u'发货人省市区代码', u'发货人地址', u'发货人电话',
-        u'净重/数量', u'商品总价', u'商品毛重'
+        u'净重/数量', u'商品总价', u'商品单价 货物的单价，RMB金额（元）', u'商品毛重'
     ])
 
 
@@ -282,8 +353,9 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     package_final_df = pd.concat(package_data, ignore_index=True)
     package_final_df[u'税号'] = '01010700'
     package_final_df[u'单位'] = u'千克'
-    package_final_df.to_excel(os.path.join(output, u"机场装箱单.xlsx".encode('utf8')),
-                              columns=package_columns)
+    package_final_df.index += 1
+    package_final_df.to_excel(os.path.join(output, u"机场报关单.xlsx".encode('utf8')),
+                              columns=package_columns, index_label="NO")
 
     customs_final_df = pd.concat(customs_data, ignore_index=True)
     customs_final_df[u'物流企业备案号'] = 'PTE681320150000003'
@@ -304,14 +376,13 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     customs_final_df[u'原产国（地区）/最终目的国（地区）代码'] = '303'
     customs_final_df[u'计量单位'] = '035'
     customs_final_df[u'商品备案号'] = '01010700'
-    customs_final_df[u'商品单价 货物的单价，RMB金额（元）'] = 90
     customs_final_df[u'商品备案号'] = '01010700'
     customs_final_df[u'商品币制'] = '142'
     customs_final_df[u'进出口标识'] = 'I'
     customs_final_df[u'码头/货场代码（为物流监控备用）'] = '6813'
     customs_final_df[u'仓单申报类型N表示新增M修改'] = 'N'
 
-    customs_final_df.to_excel(os.path.join(output, u"申报表格.xlsx".encode('utf8')),
+    customs_final_df.to_excel(os.path.join(output, u"江门申报单.xlsx".encode('utf8')),
                               columns=customs_columns, index=False)
 
     if percent_callback:
