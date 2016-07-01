@@ -52,7 +52,7 @@ PROVINCE_INFO_MAP = {
     u"辽宁": {'ticket_initial': 9, 'package_type': u"快递包裹"},
     u"黑龙江": {'ticket_initial': 9, 'package_type': u"快递包裹"},
 
-    u"广东": {'ticket_initial': 9, 'package_type': u"国内标准快递"},
+    u"广东": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
 
     u"内蒙古": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
     u"甘肃": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
