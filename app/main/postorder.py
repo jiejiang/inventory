@@ -267,7 +267,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
 
         p_data.append([
             ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
-            receiver_post_code, receiver_address, item_name, item_count, sub_total_price, gross_weight, item_name,
+            receiver_post_code, receiver_address, item_full_name, item_count, sub_total_price, gross_weight, item_full_name,
             item_count, price_per_kg, u"CNY", id_number
         ])
         c_data.append([
