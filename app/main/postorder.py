@@ -70,6 +70,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.9,
         "gross_weights" : {
             4: 4.35,
+            6: 7,
         },
         "price_per_kg" : 89.06,
         "full_name" : u"爱他美奶粉1段900g",
@@ -78,6 +79,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.9,
         "gross_weights" : {
             4: 4.35,
+            6: 7,
         },
         "price_per_kg" : 89.06,
         "full_name" : u"爱他美奶粉2段900g",
@@ -86,6 +88,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.9,
         "gross_weights" : {
             4: 4.35,
+            6: 7,
         },
         "price_per_kg" : 89.06,
         "full_name" : u"爱他美奶粉3段900g",
@@ -94,6 +97,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.8,
         "gross_weights" : {
             4: 3.90,
+            6: 6,
         },
         "price_per_kg" : 86.50,
         "full_name" : u"爱他美奶粉4段800g",
@@ -102,6 +106,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.9,
         "gross_weights" : {
             4: 4.35,
+            6: 7,
         },
         "price_per_kg" : 89.06,
         "full_name" : u"牛栏奶粉1段900g",
@@ -110,6 +115,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.9,
         "gross_weights" : {
             4: 4.35,
+            6: 7,
         },
         "price_per_kg" : 86.50,
         "full_name" : u"牛栏奶粉2段900g",
@@ -118,6 +124,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.9,
         "gross_weights" : {
             4: 4.35,
+            6: 7,
         },
         "price_per_kg" : 86.50,
         "full_name" : u"牛栏奶粉3段900g",
@@ -126,6 +133,7 @@ ITEM_NAME_MAP_INFO = {
         "net_weight": 0.8,
         "gross_weights" : {
             4: 3.90,
+            6: 6,
         },
         "price_per_kg" : 94.30,
         "full_name" : u"牛栏奶粉4段800g",
@@ -260,7 +268,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         #
         # item_weight_convert = int(item_weight) * item_count / 1000.0
         # item_price = item_weight_convert * 90
-        sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name = calculate_item_info(n_row, item_name, 4)
+        sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name \
+            = calculate_item_info(n_row, item_name, item_count)
 
         item_names.append(item_full_name)
         total_price += sub_total_price
@@ -268,7 +277,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         p_data.append([
             ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
             receiver_post_code, receiver_address, item_full_name, item_count, sub_total_price, gross_weight, item_full_name,
-            item_count, price_per_kg, u"CNY", id_number
+            net_weight, price_per_kg, u"CNY", id_number
         ])
         c_data.append([
             ticket_number, net_weight, gross_weight, item_count, item_full_name,
@@ -304,7 +313,14 @@ def normalize_columns(in_df):
 def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     if percent_callback:
         percent_callback(0)
-    in_df = pd.read_excel(input)
+    in_df = pd.read_excel(input, converters={
+        u'发件人电话号码': lambda x:str(x),
+        u'收件人邮编' : lambda x:str(x),
+        u'收件人手机号\n（11位数）' : lambda x:str(x),
+        u'身份证号\n(EMS需要)' : lambda x:str(x),
+        u'收件人手机号（11位数）' : lambda x:str(x),
+        u'身份证号(EMS需要)' : lambda x:str(x),
+    })
     normalize_columns(in_df)
 
     package_columns = [u"报关单号", u'总运单号', u'袋号', u'快件单号', u'发件人', u'发件人地址',
