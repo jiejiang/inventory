@@ -52,15 +52,15 @@ PROVINCE_INFO_MAP = {
     u"辽宁": {'ticket_initial': 9, 'package_type': u"快递包裹"},
     u"黑龙江": {'ticket_initial': 9, 'package_type': u"快递包裹"},
 
-    u"广东": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"广东": {'ticket_initial': 1, 'package_type': u"标准快递"},
 
-    u"内蒙古": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
-    u"甘肃": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
-    u"青海": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
-    u"宁夏": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
-    u"吉林": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
-    u"西藏": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
-    u"新疆": {'ticket_initial': 1, 'package_type': u"国内标准快递"},
+    u"内蒙古": {'ticket_initial': 1, 'package_type': u"标准快递"},
+    u"甘肃": {'ticket_initial': 1, 'package_type': u"标准快递"},
+    u"青海": {'ticket_initial': 1, 'package_type': u"标准快递"},
+    u"宁夏": {'ticket_initial': 1, 'package_type': u"标准快递"},
+    u"吉林": {'ticket_initial': 1, 'package_type': u"标准快递"},
+    u"西藏": {'ticket_initial': 1, 'package_type': u"标准快递"},
+    u"新疆": {'ticket_initial': 1, 'package_type': u"标准快递"},
 }
 
 ITEM_NAME_RE = re.compile(ur"^.*?((([123一二三])|([4四]))段|(\d+)g)$", flags=re.U | re.I)
