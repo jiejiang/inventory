@@ -34,7 +34,7 @@ class BatchOrderListAPI(Resource):
             job = None
             try:
                 ext = file.filename.split('.')[-1].lower()
-                if ext <> "xlt":
+                if ext <> "xlt" and ext <> "xlsx" and ext <> "xls":
                     raise Exception, 'Only .xlt file is supported!'
                 job = Job.new()
                 fileid = job.uuid + '.' + ext
