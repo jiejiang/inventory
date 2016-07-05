@@ -7,7 +7,7 @@ from sqlalchemy import func, desc, or_
 
 from .. import db
 from . import admin
-from ..models import Order, Job
+from ..models import Order, Job, ProductInfo
 from ..util import time_format
 
 class JobAdmin(sqla.ModelView):
@@ -93,7 +93,18 @@ class UnusedFastTrackOrderAdmin(OrderAdmin):
     def get_count_query(self):
         return self.session.query(func.count('*')).filter(self.model.used==False, self.model.type == Order.Type.FAST_TRACK)
 
+class ProductInfoAdmin(sqla.ModelView):
+    column_labels = dict(name=u"商品名称", count=u"箱件数", net_weight=u"每件净重(KG)", gross_weight_per_box=u"每箱毛重(KG)",
+                         price_per_kg=u"每千克价格(KG)", full_name=u"全称", deprecated=u"弃用")
+    can_view_details = True
+    column_default_sort = ('name', False)
+    column_searchable_list = ('name', 'count', 'full_name')
+
+    def on_model_change(self, form, model, is_created):
+        model.name = "".join(model.name.strip().split())
+
 admin.add_view(SuccessJobAdmin(Job, db.session, endpoint="admin.success_jobs", name=u"过往数据下载"))
+admin.add_view(ProductInfoAdmin(ProductInfo, db.session, endpoint="admin.product_info", name=u"商品信息"))
 admin.add_view(UnusedStandardOrderAdmin(Order, db.session, endpoint="admin.unused_standard_order", name=u"未使用标准订单"))
 admin.add_view(UnusedFastTrackOrderAdmin(Order, db.session, endpoint="admin.unused_fast_track_order", name=u"未使用快递订单"))
 admin.add_view(UsedOrderAdmin(Order, db.session, endpoint="admin.used_order", name=u"已生成订单"))

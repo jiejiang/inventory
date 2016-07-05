@@ -2,7 +2,7 @@
 __author__ = 'jie'
 
 import uuid, datetime, re, sys
-from sqlalchemy import desc, asc
+from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
 from . import db
 
 class Job(db.Model):
@@ -196,3 +196,24 @@ class Order(db.Model):
         if not type in Order.Type.types:
             raise Exception, "Invalid type to choose from: %s" % type
         return Order.query.filter_by(type=type, used=False).order_by(asc(Order.id)).first()
+
+
+class ProductInfo(db.Model):
+    __tablename__ = "product_info"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False, index=True)
+    count = db.Column(db.Integer, nullable=False, index=True)
+    net_weight = db.Column(db.Float, nullable=False)
+    gross_weight_per_box = db.Column(db.Float, nullable=False)
+    price_per_kg = db.Column(db.Float, nullable=False)
+    full_name = db.Column(db.String(128), nullable=True)
+    deprecated = db.Column(db.Boolean, default=False)
+
+    __table_args__ = (
+        UniqueConstraint("name", "count"),
+    )
+
+    @staticmethod
+    def find(item_name, item_count):
+        return ProductInfo.query.filter(and_(ProductInfo.name==item_name, ProductInfo.count==item_count,
+                                             ProductInfo.deprecated==False)).first()

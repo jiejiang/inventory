@@ -22,7 +22,7 @@ from weasyprint import HTML, CSS
 from wand.image import Image
 from PyPDF2 import PdfFileMerger, PdfFileReader
 
-from ..models import City, Order
+from ..models import City, Order, ProductInfo
 from .. import db
 
 Code128 = barcode.get_barcode_class('code128')
@@ -151,6 +151,15 @@ def calculate_item_info(n_row, item_name, item_count):
            info["gross_weights"][item_count], info["price_per_kg"], \
            info["full_name"] if "full_name" in info else item_name
 
+def calculate_item_info_from_db(n_row, item_name, item_count):
+    item_name = "".join(item_name.strip().split()).decode("utf8")
+    product_info = ProductInfo.find(item_name, item_count)
+    if not product_info:
+        raise Exception, u"第%d行包含未注册商品名称和箱件数 %s[%d件]" % (n_row+1, item_name, item_count)
+    return product_info.net_weight * item_count * product_info.price_per_kg, product_info.net_weight * item_count, \
+           product_info.gross_weight_per_box, product_info.price_per_kg, \
+           product_info.full_name if product_info.full_name else item_name
+
 class NoTextImageWriter(ImageWriter):
     def __init__(self):
         super(NoTextImageWriter, self).__init__()
@@ -276,7 +285,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         # item_weight_convert = int(item_weight) * item_count / 1000.0
         # item_price = item_weight_convert * 90
         sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name \
-            = calculate_item_info(n_row, item_name, item_count)
+            = calculate_item_info_from_db(n_row, item_name, item_count)
 
         item_names.append(item_full_name)
         total_price += sub_total_price
