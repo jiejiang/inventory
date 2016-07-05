@@ -151,6 +151,13 @@ def calculate_item_info(n_row, item_name, item_count):
            info["gross_weights"][item_count], info["price_per_kg"], \
            info["full_name"] if "full_name" in info else item_name
 
+class NoTextImageWriter(ImageWriter):
+    def __init__(self):
+        super(NoTextImageWriter, self).__init__()
+
+    def _paint_text(self, xpos, ypos):
+        pass
+
 def generate_pdf(ticket_number, filename, context, tmpdir):
     bot_image = os.path.join(tmpdir, 'bot_barcode_trim.png')
     top_image = os.path.join(tmpdir, 'top_barcode_trim.png')
@@ -159,7 +166,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
     if os.path.exists(top_image):
         os.remove(top_image)
 
-    Code128(ticket_number, writer=ImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
+    Code128(ticket_number, writer=NoTextImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
         'module_height': 7,
         'text_distance': 0.5,
         'quiet_zone': 1,
@@ -171,7 +178,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
     im.trim()
     im.save(filename=top_image)
 
-    Code128(ticket_number, writer=ImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
+    Code128(ticket_number, writer=NoTextImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
         'module_height': 5,
         'text_distance': 0.5,
         'quiet_zone': 1,
