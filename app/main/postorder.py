@@ -153,11 +153,12 @@ def calculate_item_info(n_row, item_name, item_count):
 
 def calculate_item_info_from_db(n_row, item_name, item_count):
     item_name = "".join(item_name.strip().split()).decode("utf8")
-    product_info = ProductInfo.find(item_name, item_count)
-    if not product_info:
+    search_result = ProductInfo.find_product_and_weight(item_name, item_count)
+    if not search_result:
         raise Exception, u"第%d行包含未注册商品名称和箱件数 %s[%d件]" % (n_row+1, item_name, item_count)
+    product_info, gross_weight_per_box = search_result
     return product_info.net_weight * item_count * product_info.price_per_kg, product_info.net_weight * item_count, \
-           product_info.gross_weight_per_box, product_info.price_per_kg, \
+           gross_weight_per_box, product_info.price_per_kg, \
            product_info.full_name if product_info.full_name else item_name
 
 class NoTextImageWriter(ImageWriter):

@@ -3,11 +3,12 @@ __author__ = 'jie'
 
 from flask_admin.contrib import sqla
 from flask_admin.menu import MenuLink
+from flask_admin.model.form import InlineFormAdmin
 from sqlalchemy import func, desc, or_
 
 from .. import db
 from . import admin
-from ..models import Order, Job, ProductInfo
+from ..models import Order, Job, ProductInfo, ProductCountInfo
 from ..util import time_format
 
 class JobAdmin(sqla.ModelView):
@@ -93,12 +94,26 @@ class UnusedFastTrackOrderAdmin(OrderAdmin):
     def get_count_query(self):
         return self.session.query(func.count('*')).filter(self.model.used==False, self.model.type == Order.Type.FAST_TRACK)
 
+class ProductCountInfoInlineModelForm(InlineFormAdmin):
+    column_labels = dict(count=u"箱件数", gross_weight_per_box=u"每箱毛重(KG)")
+
 class ProductInfoAdmin(sqla.ModelView):
-    column_labels = dict(name=u"商品名称", count=u"箱件数", net_weight=u"每件净重(KG)", gross_weight_per_box=u"每箱毛重(KG)",
+    #inline_models = [(ProductCountInfo, dict(form_columns=['count']))]
+    inline_models = (ProductCountInfoInlineModelForm(ProductCountInfo),)
+    column_list = ('name', 'net_weight', 'count_infos', 'price_per_kg', 'full_name', 'deprecated')
+
+    column_labels = dict(name=u"商品名称", net_weight=u"每件净重(KG)", count_infos=u"箱件数",
                          price_per_kg=u"每千克价格(KG)", full_name=u"全称", deprecated=u"弃用")
     can_view_details = True
     column_default_sort = ('name', False)
-    column_searchable_list = ('name', 'count', 'full_name')
+    column_searchable_list = ('name', 'full_name')
+
+    def _show_count_infos(view, context, model, name):
+        return model.count_info_string
+
+    column_formatters = {
+        'count_infos': _show_count_infos
+    }
 
     def on_model_change(self, form, model, is_created):
         model.name = "".join(model.name.strip().split())

@@ -201,19 +201,32 @@ class Order(db.Model):
 class ProductInfo(db.Model):
     __tablename__ = "product_info"
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), nullable=False, index=True)
-    count = db.Column(db.Integer, nullable=False, index=True)
+    name = db.Column(db.String(128), nullable=False, index=True, unique=True)
     net_weight = db.Column(db.Float, nullable=False)
-    gross_weight_per_box = db.Column(db.Float, nullable=False)
     price_per_kg = db.Column(db.Float, nullable=False)
     full_name = db.Column(db.String(128), nullable=True)
     deprecated = db.Column(db.Boolean, default=False)
+    count_infos = db.relationship("ProductCountInfo", backref='product_info', lazy='dynamic')
 
-    __table_args__ = (
-        UniqueConstraint("name", "count"),
-    )
+    @property
+    def count_info_string(self):
+        return " / ".join(sorted(["%s (%.2fKG)" % (count_info.count, count_info.gross_weight_per_box)
+                                  for count_info in self.count_infos]))
 
     @staticmethod
-    def find(item_name, item_count):
-        return ProductInfo.query.filter(and_(ProductInfo.name==item_name, ProductInfo.count==item_count,
-                                             ProductInfo.deprecated==False)).first()
+    def find_product_and_weight(item_name, item_count):
+        return ProductInfo.query.filter(and_(ProductInfo.name==item_name, ProductInfo.deprecated==False))\
+            .join(ProductCountInfo, ProductCountInfo.product_info_id==ProductInfo.id)\
+            .add_column(ProductCountInfo.gross_weight_per_box)\
+            .filter(ProductCountInfo.count==item_count).first()
+
+class ProductCountInfo(db.Model):
+    __tablename__ = "product_count_info"
+    id = db.Column(db.Integer, primary_key=True)
+    product_info_id = db.Column(db.Integer, db.ForeignKey('product_info.id'), nullable=True, index=True)
+    count = db.Column(db.Integer, nullable=False, index=True)
+    gross_weight_per_box = db.Column(db.Float, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("product_info_id", "count"),
+    )
