@@ -210,7 +210,7 @@ class ProductInfo(db.Model):
 
     @property
     def count_info_string(self):
-        return " / ".join(sorted(["%s (%.2fKG)" % (count_info.count, count_info.gross_weight_per_box)
+        return "<br/>".join(sorted([u"%s件 -- %g KG" % (count_info.count, count_info.gross_weight_per_box)
                                   for count_info in self.count_infos]))
 
     @staticmethod
