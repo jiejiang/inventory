@@ -43,6 +43,9 @@ if __name__ == '__main__':
             traceback.print_exc(sys.stderr)
             print >> sys.stderr, inst.message.encode('utf-8')
 
+    @manager.command
+    def retract(input, output, tmpdir):
+        pass
 
     migrate = Migrate(app, db)
     manager.add_command("shell", Shell(make_context=make_shell_context))
