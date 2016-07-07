@@ -5,9 +5,9 @@ data
 tmp
 test
 venv
-upload
-download
-retraction
+/upload
+/download
+/retraction
 app/static/.webassets-cache/
 app/bower_components
 instance/local_config.py
