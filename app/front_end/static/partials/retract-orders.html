@@ -32,19 +32,19 @@
     </div>
 </div>
 
-<div class="row"  ng-show="running">
+<div class="row" ng-show="running">
     <div class="col-lg-12 col-md-12 center">
         <i class="fa fa-spinner fa-spin fa-5x"></i>
         <h1>进行中...</h1>
     </div>
 </div>
 
-<div class="row">
+<div class="row" ng-show="order_numbers.length">
     <div class="col-lg-12">
         <uib-accordion close-others="false">
-            <uib-accordion-group is-open="false" ng-show="invalid_order_numbers.length" class="panel-info">
+            <uib-accordion-group is-open="false" class="panel-info">
                 <uib-accordion-heading>
-                    提取订单号: {[order_numbers.length]}个
+                    提取订单行数: {[order_numbers.length]}个
                 </uib-accordion-heading>
                 <ol>
                     <li ng-repeat="order_number in order_numbers">{[order_number]}</li>
@@ -54,3 +54,7 @@
         </uib-accordion>
     </div>
 </div>
+
+<hr/>
+
+<div ng-include src="'static/partials/_stats.html'"></div>

@@ -35,20 +35,29 @@
             <div class="sidebar-nav navbar-collapse">
                 <ul class="nav" id="side-menu">
                     <li>
-                        <a href="#/batch-order" ng-class="{active: isActive('/batch-order')}"><i class="fa fa-file-excel-o"></i> 生成订单</a>
+                        <a href="#/batch-order" ng-class="{active: isActive('/batch-order')}"><i class="fa fa-print"></i> 生成订单</a>
                     </li>
 
                     <li>
-                        <a href="#/retract-orders" ng-class="{active: isActive('/retract-orders')}"><i class="fa fa-upload"></i> 提取订单</a>
+                        <a href="#/retract-orders" ng-class="{active: isActive('/retract-orders')}"><i class="fa fa-check-square-o"></i> 提取订单</a>
                     </li>
+
+                    <li></li>
 
                     <li>
                         <a href="#/new-order-numbers" ng-class="{active: isActive('/new-order-numbers')}"><i class="fa fa-upload"></i> 补充订单号</a>
                     </li>
 
+                    <li></li>
+
                     <li>
-                        <a href="/{[route_prefix]}/admin/admin.success_jobs"><i class="fa fa-book"></i> 历史订单下载</a>
+                        <a href="/{[route_prefix]}/admin/admin.success_jobs"><i class="fa fa-clock-o"></i> 历史生成订单下载</a>
                     </li>
+
+                    <li>
+                        <a href="/{[route_prefix]}/admin/admin.success_retraction"><i class="fa fa-calendar-check-o"></i> 历史提取订单下载</a>
+                    </li>
+
 
                     <li>
                         <a href="/{[route_prefix]}/admin/admin.product_info"><i class="fa fa-cubes"></i> 商品信息管理</a>

@@ -433,8 +433,14 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         os.makedirs(output)
 
     #find all jobs and job to order number map
+    all_order_numbers = set()
     uuid_to_order_numbers = {}
     for i, order_number in enumerate(order_numbers):
+        order_number = str(order_number)
+        if order_number in all_order_numbers:
+            continue
+        else:
+            all_order_numbers.add(order_number)
         order = Order.find_by_order_number(order_number)
         if not order:
             raise Exception, u"第%d行包含未上载订单号: %s" % (i+1, order_number)
@@ -445,7 +451,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         uuid = str(order.job.uuid)
         if not uuid in uuid_to_order_numbers:
             uuid_to_order_numbers[uuid] = set()
-        uuid_to_order_numbers[uuid].add(str(order_number))
+        uuid_to_order_numbers[uuid].add(order_number)
         if retraction:
             order.retraction = retraction
 
@@ -473,11 +479,9 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
                 u"发货人电话" : lambda x:str(x),
                 u"商品备案号" : lambda x:str(x),
                 u"发货人电话" : lambda x:str(x),
-
-
             })
-            sub_package_df = package_df[package_df[u"快件单号"].isin(list(order_number_set))]
-            sub_customs_df = customs_df[customs_df[u"企业运单编号"].isin(list(order_number_set))]
+            sub_package_df = package_df[package_df[u"快件单号"].isin(order_number_set)]
+            sub_customs_df = customs_df[customs_df[u"企业运单编号"].isin(order_number_set)]
             package_dfs.append(sub_package_df)
             customs_dfs.append(sub_customs_df)
 

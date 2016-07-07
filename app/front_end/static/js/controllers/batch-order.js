@@ -6,21 +6,6 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
     $scope.job = BatchOrderJob;
     $scope.running = false;
 
-    $scope.hrefs = ['/' + $scope.$parent.route_prefix + '/admin/admin.unused_standard_order',
-                    '/' + $scope.$parent.route_prefix + '/admin/admin.unused_fast_track_order'];
-
-    $scope.query_stats = function() {
-        Restangular.one('orders').get().then(
-            function(data){
-                $scope.stats = data.stats;
-                $scope.used_count = data.used_count;
-            },
-            function(data){
-                $scope.clearAlerts();
-                $scope.addAlert("Connection error, please refresh the page...");
-            });
-    };
-
     $scope.query_stats();
 
     $scope.$watch('file', function () {

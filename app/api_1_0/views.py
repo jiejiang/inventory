@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from sqlalchemy import not_
+
 __author__ = 'jie'
 
 import sys
@@ -149,8 +151,11 @@ class OrderListAPI(Resource):
                 'unused': query.filter_by(used=False).count(),
                 'used': query.filter_by(used=True).count(),
             }
-        used_count = Order.query.filter_by(used=True).count()
-        return { 'stats' :stats, 'used_count' : used_count }
+        used_query = Order.query.filter_by(used=True)
+        used_count = used_query.count()
+        unretracted_count = used_query.filter_by(retraction=None).count()
+        return { 'stats' :stats, 'used_count' : used_query.count(), 'unretracted_count': unretracted_count,
+                 'retracted_count': used_count - unretracted_count }
 
 class RetractionAPI(Resource):
     def post(self):

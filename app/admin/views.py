@@ -90,11 +90,36 @@ class UnusedFastTrackOrderAdmin(OrderAdmin):
     can_create = False
     can_edit = False
 
+
     def get_query(self):
         return self.session.query(self.model).filter(self.model.used==False, self.model.type == Order.Type.FAST_TRACK)
 
     def get_count_query(self):
         return self.session.query(func.count('*')).filter(self.model.used==False, self.model.type == Order.Type.FAST_TRACK)
+
+class UnretractedOrderAdmin(OrderAdmin):
+    can_create = False
+    can_edit = False
+    can_delete = False
+    can_view_details = True
+
+    def get_query(self):
+        return self.session.query(self.model).filter(self.model.used==True, self.model.retraction_id == None)
+
+    def get_count_query(self):
+        return self.session.query(func.count('*')).filter(self.model.used==True, self.model.retraction_id == None)
+
+class RetractedOrderAdmin(OrderAdmin):
+    can_create = False
+    can_edit = False
+    can_delete = False
+    can_view_details = True
+
+    def get_query(self):
+        return self.session.query(self.model).filter(self.model.used==True, self.model.retraction_id <> None)
+
+    def get_count_query(self):
+        return self.session.query(func.count('*')).filter(self.model.used==True, self.model.retraction_id <> None)
 
 class ProductCountInfoInlineModelForm(InlineFormAdmin):
     column_labels = dict(count=u"箱件数", gross_weight_per_box=u"每箱毛重(KG)")
@@ -136,5 +161,7 @@ admin.add_view(ProductInfoAdmin(ProductInfo, db.session, endpoint="admin.product
 admin.add_view(UnusedStandardOrderAdmin(Order, db.session, endpoint="admin.unused_standard_order", name=u"未使用标准订单"))
 admin.add_view(UnusedFastTrackOrderAdmin(Order, db.session, endpoint="admin.unused_fast_track_order", name=u"未使用快递订单"))
 admin.add_view(UsedOrderAdmin(Order, db.session, endpoint="admin.used_order", name=u"已生成订单"))
+admin.add_view(UnretractedOrderAdmin(Order, db.session, endpoint="admin.unretracted_order", name=u"未提取订单"))
+admin.add_view(RetractedOrderAdmin(Order, db.session, endpoint="admin.retracted_order", name=u"已提取订单"))
 admin.add_view(FailedJobAdmin(Job, db.session, endpoint="admin.failed_jobs", name=u"错误记录"))
 admin.add_link(MenuLink(name=u"回到主界面", endpoint="front_end.index"))

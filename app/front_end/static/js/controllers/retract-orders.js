@@ -6,6 +6,8 @@ postOrdersApp.controller('RetractOrders', ['$scope', 'Upload', '$location', '$ti
     $scope.running = false;
     $scope.retraction_id = null;
 
+    $scope.query_stats();
+
     $scope.$watch('file', function () {
         $scope.clearAlerts();
         $scope.order_numbers = null;
@@ -29,9 +31,11 @@ postOrdersApp.controller('RetractOrders', ['$scope', 'Upload', '$location', '$ti
                     $scope.order_numbers = data.order_numbers;
                     $scope.retraction_id = data.id;
                     $scope.running = false;
+                    $scope.query_stats();
                 }).error(function (data) {
                     $scope.addAlert(data.message);
                     $scope.running = false;
+                    $scope.query_stats();
                 });
             }) ();
         }
