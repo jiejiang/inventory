@@ -10,7 +10,7 @@ from sqlalchemy import func, desc, or_
 
 from .. import db
 from . import admin
-from ..models import Order, Job, ProductInfo, ProductCountInfo
+from ..models import Order, Job, ProductInfo, ProductCountInfo, Retraction
 from ..util import time_format
 
 class JobAdmin(sqla.ModelView):
@@ -120,7 +120,18 @@ class ProductInfoAdmin(sqla.ModelView):
     def on_model_change(self, form, model, is_created):
         model.name = "".join(model.name.strip().split())
 
-admin.add_view(SuccessJobAdmin(Job, db.session, endpoint="admin.success_jobs", name=u"过往数据下载"))
+class RetractionAdmin(sqla.ModelView):
+    list_template = "admin/retraction/list.html"
+    can_create = False
+    can_edit = False
+    can_delete = False
+
+    column_formatters = {
+        'timestamp': lambda v, c, m, p: time_format(m.timestamp),
+    }
+
+admin.add_view(SuccessJobAdmin(Job, db.session, endpoint="admin.success_jobs", name=u"生成订单下载"))
+admin.add_view(RetractionAdmin(Retraction, db.session, endpoint="admin.success_retraction", name=u"提取订单下载"))
 admin.add_view(ProductInfoAdmin(ProductInfo, db.session, endpoint="admin.product_info", name=u"商品信息"))
 admin.add_view(UnusedStandardOrderAdmin(Order, db.session, endpoint="admin.unused_standard_order", name=u"未使用标准订单"))
 admin.add_view(UnusedFastTrackOrderAdmin(Order, db.session, endpoint="admin.unused_fast_track_order", name=u"未使用快递订单"))

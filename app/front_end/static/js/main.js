@@ -19,6 +19,10 @@ window.postOrdersApp = angular.module('postOrdersApp',
         templateUrl: partialsDir + 'batch-order.html',
         controller: 'BatchOrder'
     })
+    .when('/retract-orders', {
+        templateUrl: partialsDir + 'retract-orders.html',
+        controller: 'RetractOrders'
+    })
     .when('/new-order-numbers', {
         templateUrl: partialsDir + 'new-order-numbers.html',
         controller: 'NewOrderNumbers'

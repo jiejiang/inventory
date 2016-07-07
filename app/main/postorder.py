@@ -421,6 +421,72 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     if percent_callback:
         percent_callback(100)
 
+def read_order_numbers(inxlsx):
+    df = pd.read_excel(inxlsx, converters={
+        u"提取单号" : lambda x:str(x)
+    })
+    order_numbers = df[u"提取单号"]
+    return order_numbers
+
+def retract_from_order_numbers(download_folder, order_numbers, output, retraction=None):
+    if not os.path.exists(output):
+        os.makedirs(output)
+
+    #find all jobs and job to order number map
+    uuid_to_order_numbers = {}
+    for i, order_number in enumerate(order_numbers):
+        order = Order.find_by_order_number(order_number)
+        if not order:
+            raise Exception, u"第%d行包含未上载订单号: %s" % (i+1, order_number)
+        if not order.used:
+            raise Exception, u"第%d行包含未使用订单号: %s" % (i+1, order_number)
+        if order.retraction:
+            raise Exception, u"第%d行订单号已被提取: %s" % (i+1, order_number)
+        uuid = str(order.job.uuid)
+        if not uuid in uuid_to_order_numbers:
+            uuid_to_order_numbers[uuid] = set()
+        uuid_to_order_numbers[uuid].add(str(order_number))
+        if retraction:
+            order.retraction = retraction
+
+    package_dfs = []
+    customs_dfs = []
+    for uuid, order_number_set in uuid_to_order_numbers.items():
+        job_file = os.path.join(download_folder, uuid, uuid + '.zip')
+        if not os.path.exists(job_file):
+            raise Exception, u"历史数据丢失:%s" % uuid
+        with zipfile.ZipFile(job_file) as z:
+            package_df = pd.read_excel(z.open(u"机场报关单.xlsx"), index_col=0, converters={
+                u'快件单号': lambda x:str(x),
+                u'电话号码' : lambda x:str(x),
+                u'电话号码.1' : lambda x:str(x),
+                u'邮编' : lambda x:str(x),
+                u'税号' : lambda x:str(x),
+                u'备注' : lambda x:str(x),
+            })
+            customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
+                u"企业运单编号" : lambda x:str(x),
+                u"收件人省市区代码" : lambda x:str(x),
+                u"收件人电话" : lambda x:str(x),
+                u"收件人证件号码" : lambda x:str(x),
+                u"发货人省市区代码" : lambda x:str(x),
+                u"发货人电话" : lambda x:str(x),
+                u"商品备案号" : lambda x:str(x),
+                u"发货人电话" : lambda x:str(x),
+
+
+            })
+            sub_package_df = package_df[package_df[u"快件单号"].isin(list(order_number_set))]
+            sub_customs_df = customs_df[customs_df[u"企业运单编号"].isin(list(order_number_set))]
+            package_dfs.append(sub_package_df)
+            customs_dfs.append(sub_customs_df)
+
+    package_final_df = pd.concat(package_dfs, ignore_index=True)
+    package_final_df.index += 1
+    package_final_df.to_excel(os.path.join(output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
+    customs_final_df = pd.concat(customs_dfs, ignore_index=True)
+    customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
+    customs_final_df.to_excel(os.path.join(output, u"江门申报单.xlsx".encode('utf8')), index=False)
 
 if __name__ == "__main__":
     parser = OptionParser()

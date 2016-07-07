@@ -169,6 +169,7 @@ class Order(db.Model):
     receiver_name = db.Column(db.String(32))
     receiver_id_number = db.Column(db.String(64))
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=True)
+    retraction_id = db.Column(db.Integer, db.ForeignKey('retraction.id'), nullable=True)
 
     class Type:
         STANDARD = 1
@@ -196,6 +197,29 @@ class Order(db.Model):
         if not type in Order.Type.types:
             raise Exception, "Invalid type to choose from: %s" % type
         return Order.query.filter_by(type=type, used=False).order_by(asc(Order.id)).first()
+
+    @staticmethod
+    def find_by_order_number(order_number):
+        return Order.query.filter_by(order_number=str(order_number)).first()
+
+
+class Retraction(db.Model):
+    __tablename__ = "retraction"
+    id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String(64), index=True, unique=True, nullable=False)
+    success = db.Column(db.Boolean, default=False, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    message = db.Column(db.Text)
+    orders = db.relationship("Order", backref='retraction', lazy='dynamic')
+
+    @staticmethod
+    def new():
+        id = str(uuid.uuid4())
+        retraction = Retraction(uuid=id)
+        return retraction
+
+    def __unicode__(self):
+        return self.uuid
 
 
 class ProductInfo(db.Model):
