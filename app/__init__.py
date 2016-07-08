@@ -4,13 +4,14 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-from flask import Flask
+from flask import Flask, current_app
 from flask_bootstrap import Bootstrap
 from flask_bower import Bower
 from flask_assets import Environment, Bundle
 from flask_sqlalchemy import SQLAlchemy
 from flask_rq import RQ
 from flask_user import UserManager, UserMixin, SQLAlchemyAdapter
+from flask_user.forms import LoginForm
 
 db = SQLAlchemy()
 user_manager = None
@@ -69,9 +70,16 @@ def create_app():
     RQ(app)
     db.init_app(app)
 
+    class RedirectLoginForm(LoginForm):
+        def __init__(self, *args, **kwargs):
+            super(LoginForm, self).__init__(*args, **kwargs)
+            ROUTE_PREFIX = current_app.config['ROUTE_PREFIX'] if 'ROUTE_PREFIX' in current_app.config else None
+            if not self.next.data and ROUTE_PREFIX:
+                self.next.data = ROUTE_PREFIX
+
     from models import User
     db_adapter = SQLAlchemyAdapter(db, User)
-    user_manager = UserManager(db_adapter, app)
+    user_manager = UserManager(db_adapter, app, login_form=RedirectLoginForm)
 
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
