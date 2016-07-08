@@ -24,6 +24,7 @@ from PyPDF2 import PdfFileMerger, PdfFileReader
 
 from ..models import City, Order, ProductInfo
 from .. import db
+from ..util import time_to_filename
 
 Code128 = barcode.get_barcode_class('code128')
 
@@ -447,7 +448,8 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         if not order.used:
             raise Exception, u"第%d行包含未使用订单号: %s" % (i+1, order_number)
         if order.retraction:
-            raise Exception, u"第%d行订单号已被提取: %s" % (i+1, order_number)
+            raise Exception, u"第%d行订单号已被提取: %s, 提取信息为: Uuid [%s], 时间 [%s]" % \
+                             (i+1, order_number, order.retraction.uuid, time_to_filename(order.retraction.timestamp))
         uuid = str(order.job.uuid)
         if not uuid in uuid_to_order_numbers:
             uuid_to_order_numbers[uuid] = set()

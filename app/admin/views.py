@@ -153,6 +153,7 @@ class RetractionAdmin(sqla.ModelView):
     can_create = False
     can_edit = False
     can_delete = False
+    column_searchable_list = ('uuid', 'timestamp')
 
     column_formatters = {
         'timestamp': lambda v, c, m, p: time_format(m.timestamp),
