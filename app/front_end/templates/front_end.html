@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "front_end_base.html" %}
 
 {% block styles %}
     {{ super() }}
@@ -58,9 +58,12 @@
                         <a href="/{[route_prefix]}/admin/admin.success_retraction"><i class="fa fa-calendar-check-o"></i> 历史提取订单下载</a>
                     </li>
 
-
                     <li>
                         <a href="/{[route_prefix]}/admin/admin.product_info"><i class="fa fa-cubes"></i> 商品信息管理</a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url_for('user.logout') }}"><i class="fa fa-sign-out"></i> Logout</a>
                     </li>
 
                     <!--

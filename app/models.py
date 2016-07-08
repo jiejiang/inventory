@@ -3,6 +3,7 @@ __author__ = 'jie'
 
 import uuid, datetime, re, sys
 from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
+from flask_user import UserMixin
 from . import db
 
 class Job(db.Model):
@@ -254,3 +255,40 @@ class ProductCountInfo(db.Model):
     __table_args__ = (
         UniqueConstraint("product_info_id", "count"),
     )
+
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+
+    # User Authentication information
+    username = db.Column(db.String(50), nullable=False, unique=True)
+    password = db.Column(db.String(255), nullable=False, default='')
+    reset_password_token = db.Column(db.String(100), nullable=False, default='')
+
+    # User Email information
+    email = db.Column(db.String(255), nullable=False, unique=True)
+    confirmed_at = db.Column(db.DateTime())
+
+    # User information
+    is_enabled = db.Column(db.Boolean(), nullable=False, default=False)
+    first_name = db.Column(db.String(50), nullable=False, default='')
+    last_name = db.Column(db.String(50), nullable=False, default='')
+
+    def is_active(self):
+        return self.is_enabled
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return "%s -- %s" % (self.username, self.email)
+
+    @staticmethod
+    def create_new(user_manager, username, email, password):
+        u = User(username=username, email=email, password=user_manager.hash_password(password),
+                 confirmed_at=datetime.datetime.utcnow(), is_enabled=True)
+        db.session.add(u)
+        db.session.commit()
+
+
+

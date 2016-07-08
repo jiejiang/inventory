@@ -426,6 +426,8 @@ def read_order_numbers(inxlsx):
     df = pd.read_excel(inxlsx, converters={
         u"提取单号" : lambda x:str(x)
     })
+    if not u"提取单号" in df:
+        raise Exception, u"输入Excel格式错误"
     order_numbers = df[u"提取单号"]
     return order_numbers
 

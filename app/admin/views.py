@@ -3,17 +3,26 @@ from markupsafe import Markup
 
 __author__ = 'jie'
 
+from flask import redirect, url_for
 from flask_admin.contrib import sqla
 from flask_admin.menu import MenuLink
 from flask_admin.model.form import InlineFormAdmin
 from sqlalchemy import func, desc, or_
+from flask_user import current_user
 
 from .. import db
 from . import admin
 from ..models import Order, Job, ProductInfo, ProductCountInfo, Retraction
 from ..util import time_format
 
-class JobAdmin(sqla.ModelView):
+class LoginRequiredModelView(sqla.ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for("user.login"))
+
+class JobAdmin(LoginRequiredModelView):
     can_delete = False
     can_edit = False
     can_create = False
@@ -48,7 +57,7 @@ class FailedJobAdmin(JobAdmin):
     def get_count_query(self):
         return self.session.query(func.count('*')).filter(or_(self.model.status == Job.Status.FAILED, self.model.status == Job.Status.DELETED))
 
-class OrderAdmin(sqla.ModelView):
+class OrderAdmin(LoginRequiredModelView):
     def _show_type(view, context, model, name):
         return model.type_name
 
@@ -127,7 +136,7 @@ class RetractedOrderAdmin(OrderAdmin):
 class ProductCountInfoInlineModelForm(InlineFormAdmin):
     column_labels = dict(count=u"箱件数", gross_weight_per_box=u"每箱毛重(KG)")
 
-class ProductInfoAdmin(sqla.ModelView):
+class ProductInfoAdmin(LoginRequiredModelView):
     #inline_models = [(ProductCountInfo, dict(form_columns=['count']))]
     inline_models = (ProductCountInfoInlineModelForm(ProductCountInfo),)
     column_list = ('name', 'net_weight', 'count_infos', 'price_per_kg', 'full_name', 'deprecated')
@@ -148,7 +157,7 @@ class ProductInfoAdmin(sqla.ModelView):
     def on_model_change(self, form, model, is_created):
         model.name = "".join(model.name.strip().split())
 
-class RetractionAdmin(sqla.ModelView):
+class RetractionAdmin(LoginRequiredModelView):
     list_template = "admin/retraction/list.html"
     can_create = False
     can_edit = False

@@ -10,8 +10,10 @@ from flask_bower import Bower
 from flask_assets import Environment, Bundle
 from flask_sqlalchemy import SQLAlchemy
 from flask_rq import RQ
+from flask_user import UserManager, UserMixin, SQLAlchemyAdapter
 
 db = SQLAlchemy()
+user_manager = None
 
 class ReverseProxied(object):
     '''Wrap the application in this middleware and configure the
@@ -51,6 +53,8 @@ than /
         return self.app(environ, start_response)
 
 def create_app():
+    global user_manager
+
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_envvar('FLASKR_SETTINGS', silent=True)
     app.config.from_pyfile('local_config.py', silent=True)
@@ -64,6 +68,10 @@ def create_app():
     Environment(app)
     RQ(app)
     db.init_app(app)
+
+    from models import User
+    db_adapter = SQLAlchemyAdapter(db, User)
+    user_manager = UserManager(db_adapter, app)
 
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)

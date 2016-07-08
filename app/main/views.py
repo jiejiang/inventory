@@ -6,14 +6,17 @@ from flask import redirect, url_for, current_app, abort, Response
 from . import main
 from ..models import Job, Retraction
 from ..util import time_to_filename
+from flask_user import login_required
 
 @main.route("/", methods=['GET', 'POST'])
+@login_required
 def index():
     return redirect(url_for('front_end.index'))
 
 STREAM_BUF_SIZE = 2048
 
 @main.route("/download-job-file/<job_id>", methods=['GET',])
+@login_required
 def download_job_file(job_id):
     job = Job.query.filter_by(id=job_id).first()
     if job is None:
@@ -31,11 +34,10 @@ def download_job_file(job_id):
     response = Response(generate(), mimetype='application/octet-stream',
             headers={"Content-Disposition": "attachment;filename=%s" % "%s.zip" %
                                             (u"生成_".encode('utf8') + time_to_filename(job.completion_time))})
-
     return response
 
-
 @main.route("/download-retraction-file/<retraction_id>", methods=['GET',])
+@login_required
 def download_retraction_file(retraction_id):
     retraction = Retraction.query.filter_by(id=retraction_id).first()
     if retraction is None:
