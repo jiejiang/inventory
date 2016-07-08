@@ -59,7 +59,6 @@ class OrderAdmin(sqla.ModelView):
     }
 
     column_searchable_list = ('order_number',)
-    column_default_sort = ('id', False)
     column_exclude_list = ('job',)
     form_excluded_columns = ('job',)
     column_details_exclude_list = ('job',)
@@ -69,6 +68,7 @@ class UsedOrderAdmin(OrderAdmin):
     can_delete = False
     can_edit = False
     can_view_details = True
+    column_default_sort = ('used_time', True)
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.used == True)
@@ -79,6 +79,7 @@ class UsedOrderAdmin(OrderAdmin):
 class UnusedStandardOrderAdmin(OrderAdmin):
     can_create = False
     can_edit = False
+    column_default_sort = ('order_number', False)
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.used==False, self.model.type == Order.Type.STANDARD)
@@ -89,7 +90,7 @@ class UnusedStandardOrderAdmin(OrderAdmin):
 class UnusedFastTrackOrderAdmin(OrderAdmin):
     can_create = False
     can_edit = False
-
+    column_default_sort = ('order_number', False)
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.used==False, self.model.type == Order.Type.FAST_TRACK)
@@ -102,6 +103,7 @@ class UnretractedOrderAdmin(OrderAdmin):
     can_edit = False
     can_delete = False
     can_view_details = True
+    column_default_sort = ('used_time', True)
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.used==True, self.model.retraction_id == None)
@@ -114,6 +116,7 @@ class RetractedOrderAdmin(OrderAdmin):
     can_edit = False
     can_delete = False
     can_view_details = True
+    column_default_sort = ('used_time', True)
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.used==True, self.model.retraction_id <> None)
