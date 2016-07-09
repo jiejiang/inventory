@@ -67,7 +67,7 @@ class OrderAdmin(LoginRequiredModelView):
         'used_time': lambda v, c, m, p: time_format(m.used_time),
     }
 
-    column_searchable_list = ('order_number',)
+    column_searchable_list = ('order_number', 'receiver_id_number', 'receiver_name')
     column_exclude_list = ('job',)
     form_excluded_columns = ('job',)
     column_details_exclude_list = ('job',)
