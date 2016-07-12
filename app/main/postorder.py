@@ -229,7 +229,7 @@ def fetch_ticket_number(n_row, receiver_city):
     order = Order.pick_first(info['ticket_initial'])
     if order is None:
         raise Exception, u"订单号不足, 订单类型:%s" % Order.Type.types[info['ticket_initial']]
-    return info['package_type'], order
+    return info['package_type'], order, province.name
 
 def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
@@ -249,7 +249,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     height = in_row[u'高（厘米）']
     id_number = str(in_row[u'身份证号(EMS需要)'])
 
-    package_type, order = fetch_ticket_number(n_row, receiver_city)
+    package_type, order, receiver_province = fetch_ticket_number(n_row, receiver_city)
     order.used = True
     order.used_time = datetime.datetime.utcnow()
     order.sender_address = ", ".join((sender_name, sender_address, sender_phone))
@@ -299,7 +299,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         ])
         c_data.append([
             ticket_number, net_weight, gross_weight, item_count, item_full_name,
-            receiver_name, receiver_post_code, receiver_address, receiver_mobile, id_number,
+            receiver_name, receiver_post_code, "".join(filter(lambda x:x.strip(), (receiver_province, receiver_city, receiver_address))), receiver_mobile, id_number,
             sender_name, receiver_post_code, sender_address, sender_phone,
             net_weight, sub_total_price, price_per_kg, gross_weight
         ])

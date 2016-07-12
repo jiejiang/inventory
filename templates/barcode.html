@@ -20,7 +20,7 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:55pt">
+                        <td style="width:40pt">
                             <span>寄件:</span>
                         </td>
                         <td>
@@ -29,7 +29,11 @@
                                 {{sender_address}}
                             </span>
                         </td>
-                        <td style="width:150pt"></td>
+                        <td style="width:280pt; text-align: center">
+                            <span style="font-size:3em">
+                                {{receiver_province}}&nbsp;{{receiver_city}}
+                            </span>
+                        </td>
                     </tr>
 
                 </tbody>
@@ -37,13 +41,13 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:55pt">
+                        <td style="width:40pt">
                             <span>收件:</span>
                         </td>
                         <td>
                              <span style="font-size:1.5em">
                                  {{receiver_name}}&nbsp;{{receiver_mobile}}<br>
-                                 {{receiver_city}}&nbsp;{{receiver_address}}<br>
+                                 {{receiver_province}}&nbsp;{{receiver_city}}&nbsp;{{receiver_address}}<br>
                                  邮编:&nbsp;{{receiver_post_code}}
                              </span>
                         </td>
@@ -97,20 +101,20 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:55pt"><span>寄件:</span></td>
+                        <td style="width:40pt"><span>寄件:</span></td>
                         <td>
                             <span>
                                 {{sender_name}}&nbsp;{{sender_phone}}<br>
                                 {{sender_address}}
                             </span>
                         </td>
-                        <td style="width:55pt">
+                        <td style="width:40pt">
                             <span>收件:</span>
                         </td>
                         <td>
                             <span>
                                 {{receiver_name}}&nbsp;{{receiver_mobile}}<br>
-                                {{receiver_address}}&nbsp;{{receiver_city}}<br>
+                                {{receiver_province}}&nbsp;{{receiver_city}}&nbsp;{{receiver_address}}<br>
                                 邮编:&nbsp;{{receiver_post_code}}
                             </span>
                         </td>
