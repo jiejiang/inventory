@@ -24,11 +24,23 @@ if __name__ == '__main__':
     @manager.command
     def find_province(name):
         "Find province"
-        province = City.find_province(name)
+        province, current = City.find_province(name)
         if province:
-            print province.name
+            print province.name, province.type
+            print current.name, current.type
         else:
             print "Not Found"
+
+    @manager.command
+    def find_province_path(name):
+        cities = City.find_province_path(name)
+        if not cities:
+            print "Not Found"
+            exit(1)
+        for city in cities:
+            print city.name, city.type
+        province, city, address_header = City.normalize_province_path(cities)
+        print province, city, address_header
 
     @manager.command
     def batch(input, output, tmpdir):

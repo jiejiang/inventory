@@ -85,10 +85,58 @@ class City(db.Model):
             COUNTY : "County",
         }
 
-    SUFFIXES = set([u"省", u"市", u"县", u"区"])
+    SUFFIXES = [u"省", u"市", u"县", u"区"]
+    SUFFIXES_SET = set(SUFFIXES)
+
+    ADD_SUFFIXES = [u"省", u"市"]
+    DEL_SUFFIXES_SET = set(SUFFIXES)
 
     def __unicode__(self):
-        return self.name
+        return "%s[%d]" % (self.name, self.type)
+
+    DISTRICTS = [u'北京', u'上海', u'重庆', u'天津']
+    AUTONOMOUS_SPECIAL_REGION = {
+        u'新疆' : u'新疆维吾尔自治区',
+        u'广西' : u'广西壮族自治区',
+        u'宁夏' : u'宁夏回族自治区',
+        u'内蒙古' : u'内蒙古自治区',
+        u'西藏' : u'西藏自治区',
+        u'香港' : u'香港特别行政区',
+        u'澳门' : u'澳门特别行政区'
+    }
+
+    @staticmethod
+    def __normalize_province(name):
+        if name in City.DISTRICTS:
+            return name + u"市"
+        elif name in City.AUTONOMOUS_SPECIAL_REGION:
+            return City.AUTONOMOUS_SPECIAL_REGION[name]
+        else:
+            return name + u"省"
+
+    @staticmethod
+    def __normalize_municipality(name):
+        return name + u"市" if not name.endswith(u"市") else name
+
+    @staticmethod
+    def normalize_province_path(cities):
+        if not cities or len(cities) > 3:
+            raise Exception, "Empty or too long province info"
+        for i, type in enumerate((City.Type.PROVINCE, City.Type.MUNICIPALITY, City.Type.COUNTY)):
+            if i >= len(cities):
+                break
+            assert(cities[i].type == type)
+        province_name = City.__normalize_province(cities[0].name)
+        municipal_name = City.__normalize_municipality(cities[1].name) \
+            if len(cities) > 1 and cities[0].name <> cities[1].name else ""
+
+        if len(cities) < 3:
+            return province_name, municipal_name, ""
+        else:
+            if cities[2].name.endswith(u'市'):         #check if 地级市
+                return province_name, cities[2].name, ""
+            else:
+                return province_name, municipal_name, cities[2].name
 
     @staticmethod
     def populate(filename):
@@ -147,10 +195,50 @@ class City(db.Model):
         city = find_routine(name)
         if city:
             return city
-        if name[-1] in City.SUFFIXES:
+        if name[-1] in City.SUFFIXES_SET:
             return find_routine(name[:-1])
         else:
             for suffix in City.SUFFIXES:
+                city = find_routine(name + suffix.decode('utf8'))
+                if city:
+                    return city
+        return None
+
+
+    @staticmethod
+    def find_province_path(name):
+        name = name.strip()
+        if name == "":
+            return None
+
+        def find_routine(name):
+            cities = City.query.filter_by(name=name).order_by(City.type).all()
+            for city in cities:
+                if city.type == City.Type.PROVINCE:
+                    return [city,]
+            for city in cities:
+                res = []
+                while city:
+                    if city.type == City.Type.PROVINCE:
+                        res.append(city)
+                        res.reverse()
+                        return res
+                    elif city.type == City.Type.MUNICIPALITY or city.type == City.Type.COUNTY:
+                        res.append(city)
+                        parent = City.query.filter_by(id=city.parent_id).first()
+                        if not parent:
+                            raise Exception, "Cannot find valid parent: %s" % city.name
+                        city = parent
+                raise Exception, "Failed to find with child"
+            return None
+
+        city = find_routine(name)
+        if city:
+            return city
+        if name[-1] in City.DEL_SUFFIXES_SET:
+            return find_routine(name[:-1])
+        else:
+            for suffix in City.ADD_SUFFIXES:
                 city = find_routine(name + suffix.decode('utf8'))
                 if city:
                     return city

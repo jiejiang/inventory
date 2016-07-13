@@ -220,16 +220,17 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
 
 def fetch_ticket_number(n_row, receiver_city):
     city_name = "".join(receiver_city.strip().split())
-    province = City.find_province(city_name)
-    if not province:
+    cities = City.find_province_path(city_name)
+    if not cities:
         raise Exception, "Cannot find province: %s at row %d" % (city_name, n_row)
-    if not province.name in PROVINCE_INFO_MAP:
+    if not cities[0].name in PROVINCE_INFO_MAP:
         raise Exception, "Post to province %s is not supported: %s at row %d" % (city_name, n_row)
-    info = PROVINCE_INFO_MAP[province.name]
+    info = PROVINCE_INFO_MAP[cities[0].name]
     order = Order.pick_first(info['ticket_initial'])
     if order is None:
         raise Exception, u"订单号不足, 订单类型:%s" % Order.Type.types[info['ticket_initial']]
-    return info['package_type'], order, province.name
+    province_name, municipal_name, address_header = City.normalize_province_path(cities)
+    return info['package_type'], order, province_name, municipal_name, address_header
 
 def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
@@ -249,7 +250,11 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     height = in_row[u'高（厘米）']
     id_number = str(in_row[u'身份证号(EMS需要)'])
 
-    package_type, order, receiver_province = fetch_ticket_number(n_row, receiver_city)
+    package_type, order, receiver_province, receiver_municipal, receiver_address_header = \
+        fetch_ticket_number(n_row, receiver_city)
+    receiver_city = receiver_municipal
+    receiver_address = receiver_address_header + receiver_address
+
     order.used = True
     order.used_time = datetime.datetime.utcnow()
     order.sender_address = ", ".join((sender_name, sender_address, sender_phone))
@@ -293,7 +298,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         total_price += sub_total_price
 
         p_data.append([
-            ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city,
+            ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, "".join((receiver_province, receiver_city)),
             receiver_post_code, receiver_address, item_full_name, item_count, sub_total_price, gross_weight, item_full_name,
             net_weight, price_per_kg, u"CNY", id_number
         ])
@@ -404,7 +409,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     customs_final_df[u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码'] = '6813'
     customs_final_df[u'收件人所在国家(地区）代码'] = '142'
     customs_final_df[u'收件人证件类型'] = '1'
-    customs_final_df[u'发货人所在国家(地区）代码'] = '601'
+    customs_final_df[u'发货人所在国家(地区）代码'] = '303'
     customs_final_df[u'电商商户企业备案号'] = 'PTE681320150000004'
     customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df[u'原产国（地区）/最终目的国（地区）代码'] = '303'
