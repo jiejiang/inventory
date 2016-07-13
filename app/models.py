@@ -104,6 +104,7 @@ class City(db.Model):
         u'香港' : u'香港特别行政区',
         u'澳门' : u'澳门特别行政区'
     }
+    MUNICIPAL_SUFFIX_SET = set([u"市", u"县", u"区"])
 
     @staticmethod
     def __normalize_province(name):
@@ -116,7 +117,7 @@ class City(db.Model):
 
     @staticmethod
     def __normalize_municipality(name):
-        return name + u"市" if not name.endswith(u"市") else name
+        return name + u"市" if not name[-1] in City.MUNICIPAL_SUFFIX_SET else name
 
     @staticmethod
     def normalize_province_path(cities):
