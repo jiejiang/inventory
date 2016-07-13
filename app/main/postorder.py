@@ -397,15 +397,16 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
                               columns=package_columns, index_label="NO")
 
     customs_final_df = pd.concat(customs_data, ignore_index=True)
+    customs_final_df[u'订单编号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df[u'物流企业备案号'] = 'PTE681320150000003'
     customs_final_df[u'电商平台备案号'] = 'PTE681320150000004'
     customs_final_df[u'物流状态'] = '0'
     customs_final_df[u'运费'] = 0
-    customs_final_df[u'运费币制'] = '303'
+    customs_final_df[u'运费币制'] = '142'
     customs_final_df[u'运输方式'] = '4'
     customs_final_df[u'包装种类'] = '4'
     customs_final_df[u'保价费'] = 0
-    customs_final_df[u'保价费币制'] = '303'
+    customs_final_df[u'保价费币制'] = '142'
     customs_final_df[u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码'] = '6813'
     customs_final_df[u'收件人所在国家(地区）代码'] = '142'
     customs_final_df[u'收件人证件类型'] = '1'
@@ -498,6 +499,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
     package_final_df.index += 1
     package_final_df.to_excel(os.path.join(output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
     customs_final_df = pd.concat(customs_dfs, ignore_index=True)
+    customs_final_df[u'订单编号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df.to_excel(os.path.join(output, u"江门申报单.xlsx".encode('utf8')), index=False)
 
