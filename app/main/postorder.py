@@ -442,6 +442,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         os.makedirs(output)
 
     #find all jobs and job to order number map
+    receiver_sig_to_order_numbers = {}
     all_order_numbers = set()
     uuid_to_order_numbers = {}
     for i, order_number in enumerate(order_numbers):
@@ -458,6 +459,15 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         if order.retraction:
             raise Exception, u"第%d行订单号已被提取: %s, 提取信息为: Uuid [%s], 时间 [%s]" % \
                              (i+1, order_number, order.retraction.uuid, time_to_filename(order.retraction.timestamp))
+        receiver_sig = order.receiver_name
+        if not receiver_sig in receiver_sig_to_order_numbers:
+            receiver_sig_to_order_numbers[receiver_sig] = []
+        if len(receiver_sig_to_order_numbers[receiver_sig]) >= 2:
+            raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同收件人(%s)" % \
+                             (i+1, order_number,
+                              " / ".join(["第%d行订单(%s)" % (x+1, y) for x, y in receiver_sig_to_order_numbers[receiver_sig]]),
+                              receiver_sig)
+        receiver_sig_to_order_numbers[receiver_sig].append((i, order_number))
         uuid = str(order.job.uuid)
         if not uuid in uuid_to_order_numbers:
             uuid_to_order_numbers[uuid] = set()
