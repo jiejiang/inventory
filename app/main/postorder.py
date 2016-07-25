@@ -255,6 +255,9 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     receiver_city = receiver_municipal
     receiver_address = receiver_address_header + receiver_address
 
+    pc_text = receiver_province + receiver_municipal
+    receiver_province_city_font_size = "3" if len(pc_text) <= 10 else "2.5" if len(pc_text) <= 15 else "2"
+
     order.used = True
     order.used_time = datetime.datetime.utcnow()
     order.sender_address = ", ".join((sender_name, sender_address, sender_phone))
