@@ -243,12 +243,19 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     receiver_address = in_row[u'收件人地址（无需包括省份和城市）']
     receiver_city = in_row[u'收件人城市（中文）']
     receiver_post_code = str(in_row[u'收件人邮编'])
-    n_package = int(in_row[u'包裹数量'])
+    n_package = in_row[u'包裹数量']
     package_weight = in_row[u'包裹重量（公斤）']
     length = in_row[u'长（厘米）']
     width = in_row[u'宽（厘米）']
     height = in_row[u'高（厘米）']
     id_number = str(in_row[u'身份证号(EMS需要)'])
+
+    if not isinstance(sender_name, basestring) or not isinstance(sender_address, basestring):
+        raise Exception, u"第%d行发件人信息异常" % n_row
+    if not isinstance(n_package, int):
+        raise Exception, u"第%d行包裹数量异常" % n_row
+    if not isinstance(receiver_city, basestring) or not receiver_city.strip():
+        raise Exception, u"第%d行收件人城市名异常" % n_row
 
     package_type, order, receiver_province, receiver_municipal, receiver_address_header = \
         fetch_ticket_number(n_row, receiver_city)
@@ -267,6 +274,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     if job:
         order.job = job
     ticket_number = order.order_number
+    full_address = "".join(filter(lambda x:x.strip(), (receiver_province, receiver_city, receiver_address)))
 
     total_price = 0
     item_names = []
@@ -300,14 +308,16 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         item_names.append(item_full_name)
         total_price += sub_total_price
 
+
+
         p_data.append([
-            ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, "".join((receiver_province, receiver_city)),
-            receiver_post_code, receiver_address, item_full_name, item_count, sub_total_price, gross_weight, item_full_name,
+            ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city if receiver_city else receiver_province,
+            receiver_post_code, full_address, item_full_name, item_count, sub_total_price, gross_weight, item_full_name,
             net_weight, price_per_kg, u"CNY", id_number
         ])
         c_data.append([
             ticket_number, net_weight, gross_weight, item_count, item_full_name,
-            receiver_name, receiver_post_code, "".join(filter(lambda x:x.strip(), (receiver_province, receiver_city, receiver_address))), receiver_mobile, id_number,
+            receiver_name, receiver_post_code, full_address, receiver_mobile, id_number,
             sender_name, receiver_post_code, sender_address, sender_phone,
             net_weight, sub_total_price, price_per_kg, gross_weight
         ])
@@ -400,7 +410,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
                               columns=package_columns, index_label="NO")
 
     customs_final_df = pd.concat(customs_data, ignore_index=True)
-    customs_final_df[u'订单编号'] = range(1, len(customs_final_df.index) + 1)
+    customs_final_df[u'订单编号'] = None
     customs_final_df[u'物流企业备案号'] = 'PTE681320150000003'
     customs_final_df[u'电商平台备案号'] = 'PTE681320150000004'
     customs_final_df[u'物流状态'] = '0'
@@ -502,6 +512,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
                 u"发货人电话" : lambda x:str(x),
                 u"商品备案号" : lambda x:str(x),
                 u"发货人电话" : lambda x:str(x),
+                u'计量单位': lambda x:str(x),
             })
             sub_package_df = package_df[package_df[u"快件单号"].isin(order_number_set)]
             sub_customs_df = customs_df[customs_df[u"企业运单编号"].isin(order_number_set)]
@@ -512,7 +523,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
     package_final_df.index += 1
     package_final_df.to_excel(os.path.join(output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
     customs_final_df = pd.concat(customs_dfs, ignore_index=True)
-    customs_final_df[u'订单编号'] = range(1, len(customs_final_df.index) + 1)
+    customs_final_df[u'订单编号'] = None
     customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df.to_excel(os.path.join(output, u"江门申报单.xlsx".encode('utf8')), index=False)
 
