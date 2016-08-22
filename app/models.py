@@ -250,7 +250,7 @@ class Order(db.Model):
     __tablename__ = "order"
     id = db.Column(db.Integer, primary_key=True)
     order_number = db.Column(db.String(128), unique=True, nullable=False, index=True)
-    type = db.Column(db.Integer, index=True, nullable=False)
+    type = db.Column(db.Integer, index=True, default=1)
     upload_time = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     used = db.Column(db.Boolean, index=True, nullable=False, default=False)
     used_time = db.Column(db.DateTime)
@@ -262,12 +262,10 @@ class Order(db.Model):
     retraction_id = db.Column(db.Integer, db.ForeignKey('retraction.id'), nullable=True)
 
     class Type:
-        STANDARD = 1
-        FAST_TRACK = 9
+        YUNDA = 1
 
         types = {
-            STANDARD : u"标准单号",
-            FAST_TRACK : u"快递包裹",
+            YUNDA : u"韵达单号",
         }
 
     @property
@@ -279,8 +277,7 @@ class Order(db.Model):
 
     @staticmethod
     def is_order_number_valid(type, order_number):
-        return (type == Order.Type.STANDARD and order_number.startswith("1")) or \
-               (type == Order.Type.FAST_TRACK and order_number.startswith("9"))
+        return type == Order.Type.YUNDA
 
     @staticmethod
     def pick_first(type):

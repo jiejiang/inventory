@@ -15,6 +15,6 @@ class MyAdminIndexView(AdminIndexView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for("user.login"))
 
-admin = Admin(name=u"Admin", template_mode='bootstrap3', index_view=MyAdminIndexView(endpoint="admin"))
+admin = Admin(name=u"韵达线 Admin", template_mode='bootstrap3', index_view=MyAdminIndexView(endpoint=u"admin"))
 
 from . import views

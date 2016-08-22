@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "jquery": "~3.0.0",
-    "startbootstrap-sb-admin-2": "~1.0.8",
+    "startbootstrap-sb-admin-2": "https://github.com/BlackrockDigital/startbootstrap-sb-admin-2.git#master",
     "font-awesome": "~4.6.3",
     "angular": "~1.5.6",
     "angular-route": "~1.5.6",
