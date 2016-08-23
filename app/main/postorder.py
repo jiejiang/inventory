@@ -186,7 +186,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
         os.remove(top_image)
 
     Code128(ticket_number, writer=NoTextImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
-        'module_height': 7,
+        'module_height': 3,
         'text_distance': 0.5,
         'quiet_zone': 1,
         'dpi': 1200,
@@ -198,7 +198,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
     im.save(filename=top_image)
 
     Code128(ticket_number, writer=NoTextImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
-        'module_height': 5,
+        'module_height': 3,
         'text_distance': 0.5,
         'quiet_zone': 1,
         'dpi': 1200,
@@ -235,14 +235,13 @@ def fetch_ticket_number(n_row, receiver_city):
     if not cities[0].name in PROVINCE_INFO_MAP:
         raise Exception, "Post to province %s is not supported: %s at row %d" % (
             city_name, n_row)
-    info = PROVINCE_INFO_MAP[cities[0].name]
-    order = Order.pick_first(info['ticket_initial'])
+    #info = PROVINCE_INFO_MAP[cities[0].name]
+    order = Order.pick_unused()
     if order is None:
-        raise Exception, u"订单号不足, 订单类型:%s" % Order.Type.types[
-            info['ticket_initial']]
+        raise Exception, u"订单号不足"
     province_name, municipal_name, address_header = City.normalize_province_path(
         cities)
-    return info['package_type'], order, province_name, municipal_name, address_header
+    return u"国际件", order, province_name, municipal_name, address_header
 
 
 def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):

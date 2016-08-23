@@ -277,13 +277,17 @@ class Order(db.Model):
 
     @staticmethod
     def is_order_number_valid(type, order_number):
-        return type == Order.Type.YUNDA
+        return type == Order.Type.YUNDA and re.match(r"^\d+$", order_number)
 
     @staticmethod
     def pick_first(type):
         if not type in Order.Type.types:
             raise Exception, "Invalid type to choose from: %s" % type
         return Order.query.filter_by(type=type, used=False).order_by(asc(Order.id)).first()
+
+    @staticmethod
+    def pick_unused():
+        return Order.query.filter_by(used=False).order_by(asc(Order.id)).first()
 
     @staticmethod
     def find_by_order_number(order_number):

@@ -117,9 +117,11 @@ class OrderListAPI(Resource):
                 inserted_order_numbers = {}
                 invalid_order_numbers = []
                 existing_order_numbers = []
+                found = False
                 for type_int, type_string in Order.Type.types.items():
                     inserted_order_numbers[type_string] = []
                     if type_string in df.columns:
+                        found = True
                         for order_number in df[type_string]:
                             order_number = str(order_number).strip()
                             if order_number:
@@ -133,6 +135,8 @@ class OrderListAPI(Resource):
                                 db.session.add(order)
                                 inserted_order_numbers[type_string].append(order_number)
                 db.session.commit()
+                if not found:
+                    raise Exception, u"输入未包含有效订单列"
                 return {'inserted_order_numbers': inserted_order_numbers, 'invalid_order_numbers' : invalid_order_numbers,
                         'existing_order_numbers' : existing_order_numbers}
             except Exception, inst:

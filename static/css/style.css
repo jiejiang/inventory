@@ -96,7 +96,7 @@ dd          { margin-left: 1.5em;}
 	of other elements.
  */
 table       { margin: 0em; width:100%; }
-table td { border: 1px dashed }
+table td { border: 1px solid }
 th          { font-weight: bold; }
 thead th    { background: #c3d9ff; }
 th,td,caption { padding: 0; }
@@ -104,10 +104,6 @@ th,td,caption { padding: 0; }
 	You can zebra-stripe your tables in outdated browsers by adding
 	the class "even" to every other table row.
  */
-tbody tr:nth-child(even) td,
-tbody tr.even td  {
-	background: #e5ecf9;
-}
 tfoot       { font-style: italic; }
 caption     { background: #eee; }
 
