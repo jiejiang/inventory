@@ -3417,3 +3417,5 @@ INSERT INTO `db_yhm_city` VALUES (3405,3401,'包河区',3);
 INSERT INTO `db_yhm_city` VALUES (3406,3401,'长丰县',3);
 INSERT INTO `db_yhm_city` VALUES (3407,3401,'肥东县',3);
 INSERT INTO `db_yhm_city` VALUES (3408,3401,'肥西县',3);
+INSERT INTO `db_yhm_city` VALUES (3409,30,'芒市',2);
+INSERT INTO `db_yhm_city` VALUES (3410,31,'义乌',2);
