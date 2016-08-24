@@ -19,7 +19,7 @@ body {
   font-size: 75%;
   color: #222;
   background: #fff;
-  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-family: "Droid Sans Fallback", "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
 
 
