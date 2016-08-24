@@ -186,7 +186,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
         os.remove(top_image)
 
     Code128(ticket_number, writer=NoTextImageWriter()).save(os.path.join(tmpdir, 'top_barcode'), options={
-        'module_height': 3,
+        'module_height': 5,
         'text_distance': 0.5,
         'quiet_zone': 1,
         'dpi': 1200,
@@ -198,7 +198,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
     im.save(filename=top_image)
 
     Code128(ticket_number, writer=NoTextImageWriter()).save(os.path.join(tmpdir, 'bot_barcode'), options={
-        'module_height': 3,
+        'module_height': 5,
         'text_distance': 0.5,
         'quiet_zone': 1,
         'dpi': 1200,
@@ -416,7 +416,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
             raise Exception, "Failed to generate pdf: %s" % ticket_number
         merger.append(PdfFileReader(file(pdf_file, 'rb')))
     merger.write(os.path.join(
-        output, u"面单_%d页.pdf".encode('utf8') % len(ticket_numbers)))
+        output, u"面单_%d单%d页.pdf".encode('utf8') % (len(ticket_numbers), len(ticket_numbers)*2)))
     shutil.rmtree(barcode_dir)
 
     package_final_df = pd.concat(package_data, ignore_index=True)
