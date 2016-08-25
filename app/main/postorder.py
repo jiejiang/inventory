@@ -517,7 +517,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         receiver_sig = order.receiver_name
         if not receiver_sig in receiver_sig_to_order_numbers:
             receiver_sig_to_order_numbers[receiver_sig] = []
-        if len(receiver_sig_to_order_numbers[receiver_sig]) >= 2:
+        if len(receiver_sig_to_order_numbers[receiver_sig]) >= 4:
             raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同收件人(%s)" % \
                              (i + 1, order_number,
                               " / ".join(["第%d行订单(%s)" % (x + 1, y)
