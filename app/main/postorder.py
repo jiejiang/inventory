@@ -292,8 +292,14 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     full_address = "".join(filter(
         lambda x: x.strip(), (receiver_province, receiver_city, receiver_address)))
 
-    total_price = 0
+    p_data_list = []
+    c_data_list = []
+
     item_names = []
+    total_price = 0
+    total_item_count = 0
+    total_net_weight = 0
+    total_gross_weight = 0
     for i in xrange(n_package):
         suffix = "" if i == 0 else ".%d" % i
         item_name = in_row[u'申报物品%d(英文）' % (i + 1)]
@@ -323,18 +329,34 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
 
         item_names.append(item_full_name)
         total_price += sub_total_price
+        total_item_count += item_count
+        total_net_weight += net_weight
+        total_gross_weight += gross_weight
 
-        p_data.append([
+        p_data_list.append([
             ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city if receiver_city else receiver_province,
             receiver_post_code, full_address, item_full_name, item_count, sub_total_price, gross_weight, item_full_name,
             net_weight, price_per_kg, u"CNY", id_number
         ])
-        c_data.append([
+        c_data_list.append([
             ticket_number, net_weight, gross_weight, item_count, item_full_name,
             receiver_name, receiver_post_code, full_address, receiver_mobile, id_number,
             sender_name, receiver_post_code, sender_address, sender_phone,
             net_weight, sub_total_price, price_per_kg, gross_weight
         ])
+
+    assert(len(p_data_list) == len(c_data_list))
+
+    for p in p_data_list:
+        p[10] = total_item_count
+        p[11] = total_price
+        p[12] = total_gross_weight
+        p_data.append(p)
+
+    for c in c_data_list:
+        c[1] = total_net_weight
+        c[2] = total_gross_weight
+        c_data.append(c)
 
     total_price = "%.2f" % total_price
     if total_price.endswith(".00") and len(total_price) > 3:
