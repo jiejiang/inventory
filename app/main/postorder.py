@@ -514,11 +514,11 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
             raise Exception, u"第%d行订单号已被提取: %s, 提取信息为: Uuid [%s], 时间 [%s]" % \
                              (i + 1, order_number, order.retraction.uuid,
                               time_to_filename(order.retraction.timestamp))
-        receiver_sig = order.receiver_name
+        receiver_sig = order.receiver_id_number
         if not receiver_sig in receiver_sig_to_order_numbers:
             receiver_sig_to_order_numbers[receiver_sig] = []
         if len(receiver_sig_to_order_numbers[receiver_sig]) >= 4:
-            raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同收件人(%s)" % \
+            raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同证件号码(%s)" % \
                              (i + 1, order_number,
                               " / ".join(["第%d行订单(%s)" % (x + 1, y)
                                           for x, y in receiver_sig_to_order_numbers[receiver_sig]]),
