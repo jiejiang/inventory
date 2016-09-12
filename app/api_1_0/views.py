@@ -112,7 +112,10 @@ class OrderListAPI(Resource):
                 if ext <> "xlt" and ext <> "xlsx" and ext <> "xls":
                     raise Exception, 'Only .xlt, .xlsx or .xls file is supported!'
 
-                df = pd.read_excel(file)
+                converters = {}
+                for type_int, type_string in Order.Type.types.items():
+                    converters[type_string] = lambda x:str(x)
+                df = pd.read_excel(file, converters=converters)
 
                 inserted_order_numbers = {}
                 invalid_order_numbers = []

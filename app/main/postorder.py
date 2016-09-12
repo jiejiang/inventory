@@ -393,6 +393,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
         u'身份证号\n(EMS需要)': lambda x: str(x),
         u'收件人手机号（11位数）': lambda x: str(x),
         u'身份证号(EMS需要)': lambda x: str(x),
+        u'包裹数量' : lambda x: int(x),
     })
     normalize_columns(in_df)
 
