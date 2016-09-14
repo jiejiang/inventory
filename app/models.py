@@ -88,7 +88,7 @@ class City(db.Model):
     SUFFIXES = [u"省", u"市", u"县", u"区"]
     SUFFIXES_SET = set(SUFFIXES)
 
-    ADD_SUFFIXES = [u"省", u"市"]
+    ADD_SUFFIXES = [u"省", u"市", u"盟"]
     DEL_SUFFIXES_SET = set(SUFFIXES)
 
     def __unicode__(self):
@@ -104,7 +104,7 @@ class City(db.Model):
         u'香港' : u'香港特别行政区',
         u'澳门' : u'澳门特别行政区'
     }
-    MUNICIPAL_SUFFIX_SET = set([u"市", u"县", u"区"])
+    MUNICIPAL_SUFFIX_SET = set([u"市", u"县", u"区", u"盟"])
 
     @staticmethod
     def __normalize_province(name):
@@ -240,7 +240,9 @@ class City(db.Model):
             return find_routine(name[:-1])
         else:
             for suffix in City.ADD_SUFFIXES:
-                city = find_routine(name + suffix.decode('utf8'))
+                new_name = name + suffix.decode('utf8')
+                if new_name <> u"西盟":
+                    city = find_routine(new_name)
                 if city:
                     return city
         return None
