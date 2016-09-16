@@ -356,6 +356,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     for c in c_data_list:
         c[1] = total_net_weight
         c[2] = total_gross_weight
+        c[3] = total_item_count
         c_data.append(c)
 
     total_price = "%.2f" % total_price
