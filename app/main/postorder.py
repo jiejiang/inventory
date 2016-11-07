@@ -394,7 +394,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
         u'身份证号\n(EMS需要)': lambda x: str(x),
         u'收件人手机号（11位数）': lambda x: str(x),
         u'身份证号(EMS需要)': lambda x: str(x),
-        u'包裹数量' : lambda x: int(x),
+        u'包裹数量': lambda x: int(x),
     })
     normalize_columns(in_df)
 
@@ -440,7 +440,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
             raise Exception, "Failed to generate pdf: %s" % ticket_number
         merger.append(PdfFileReader(file(pdf_file, 'rb')))
     merger.write(os.path.join(
-        output, u"面单_%d单%d页.pdf".encode('utf8') % (len(ticket_numbers), len(ticket_numbers)*2)))
+        output, u"面单_%d单%d页.pdf".encode('utf8') % (len(ticket_numbers), len(ticket_numbers) * 2)))
     shutil.rmtree(barcode_dir)
 
     package_final_df = pd.concat(package_data, ignore_index=True)
@@ -519,7 +519,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         receiver_sig = order.receiver_id_number
         if not receiver_sig in receiver_sig_to_order_numbers:
             receiver_sig_to_order_numbers[receiver_sig] = []
-        if len(receiver_sig_to_order_numbers[receiver_sig]) >= 4:
+        if len(receiver_sig_to_order_numbers[receiver_sig]) >= 3:
             raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同证件号码(%s)" % \
                              (i + 1, order_number,
                               " / ".join(["第%d行订单(%s)" % (x + 1, y)
