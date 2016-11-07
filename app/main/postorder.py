@@ -283,7 +283,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     order.sender_address = ", ".join(
         (sender_name, sender_address, sender_phone))
     order.receiver_address = ", ".join(
-        (receiver_address, receiver_city, receiver_post_code, receiver_mobile))
+        (receiver_address, receiver_city, receiver_post_code))
+    order.receiver_mobile = receiver_mobile
     order.receiver_id_number = id_number
     order.receiver_name = receiver_name
     if job:
