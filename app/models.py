@@ -260,6 +260,7 @@ class Order(db.Model):
     receiver_address = db.Column(db.String(256))
     receiver_name = db.Column(db.String(32))
     receiver_id_number = db.Column(db.String(64))
+    receiver_mobile = db.Column(db.String(64))
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=True)
     retraction_id = db.Column(db.Integer, db.ForeignKey('retraction.id'), nullable=True)
 
