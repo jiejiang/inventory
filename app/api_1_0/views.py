@@ -9,14 +9,17 @@ import os, datetime, zipfile
 from flask import request, current_app, Response
 from flask_restful import Resource, fields, marshal_with
 from flask_restful import abort, reqparse
+from flask_user import login_required
 from redis import ConnectionError
 from sqlalchemy.orm import exc
+from sqlalchemy import func, desc, or_, and_
 import pandas as pd
 from . import api
 from .. import db
 from ..models import Job, Order, Retraction
 from ..util import time_to_filename
 from ..main.postorder import read_order_numbers, retract_from_order_numbers
+from auth import http_basic_auth
 
 STREAM_BUF_SIZE = 2048
 
@@ -30,6 +33,8 @@ file_download_parser = reqparse.RequestParser()
 file_download_parser.add_argument('id', type=str, help="File ID!")
 
 class BatchOrderListAPI(Resource):
+    method_decorators = [login_required, ]
+
     def post(self):
         from ..main.jobs import batch_order
 
@@ -88,6 +93,8 @@ class BatchOrderListAPI(Resource):
 
 
 class JobAPI(Resource):
+    method_decorators = [login_required, ]
+
     fields = {'id': fields.String(attribute='uuid'), 'status': fields.String(attribute='status_string'),
                   'creationTime': fields.DateTime(dt_format='iso8601', attribute='creation_time'),
                   'completionTime': fields.DateTime(dt_format='iso8601', attribute='completion_time'),
@@ -104,6 +111,8 @@ class JobAPI(Resource):
 
 
 class OrderListAPI(Resource):
+    method_decorators = [login_required, ]
+
     def post(self):
         file = request.files['file']
         if file:
@@ -165,6 +174,8 @@ class OrderListAPI(Resource):
                  'retracted_count': used_count - unretracted_count }
 
 class RetractionAPI(Resource):
+    method_decorators = [login_required, ]
+
     def post(self):
         file = request.files['file']
         if file:
@@ -231,3 +242,30 @@ api.add_resource(BatchOrderListAPI, '/batch-order')
 api.add_resource(JobAPI, '/job/<job_id>')
 api.add_resource(OrderListAPI, '/orders')
 api.add_resource(RetractionAPI, '/retract-orders')
+
+
+query_order_parser = reqparse.RequestParser()
+query_order_parser.add_argument('name', type=str, help="Receiver Name", required=False)
+query_order_parser.add_argument('mobile', type=str, help="Receiver Mobile Number", required=False)
+query_order_parser.add_argument('id', type=str, help="Receiver ID Number", required=False)
+
+class OrderAPI(Resource):
+
+    fields = {'orderNumber': fields.String(attribute='order_number'),
+              'usedTime': fields.DateTime(dt_format='iso8601', attribute='used_time'),}
+
+    @marshal_with(fields)
+    def get(self):
+        http_basic_auth(request.authorization)
+        args = query_order_parser.parse_args()
+        query = Order.query
+        if args['id']:
+            query = query.filter(Order.receiver_id_number==args['id'])
+        elif args['name'] and args['mobile']:
+            query = query.filter(and_(Order.receiver_name==args["name"], Order.receiver_mobile==args["mobile"]))
+        else:
+            abort(500, message="Invalid arguments")
+        orders = query.order_by(desc(Order.used_time)).all()
+        return orders
+
+api.add_resource(OrderAPI, '/order')
