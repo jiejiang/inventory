@@ -245,27 +245,35 @@ api.add_resource(RetractionAPI, '/retract-orders')
 
 
 query_order_parser = reqparse.RequestParser()
-query_order_parser.add_argument('name', type=str, help="Receiver Name", required=False)
-query_order_parser.add_argument('mobile', type=str, help="Receiver Mobile Number", required=False)
-query_order_parser.add_argument('id', type=str, help="Receiver ID Number", required=False)
+query_order_parser.add_argument('id', type=str, help="Receiver ID Number", required=False, action='append')
+query_order_parser.add_argument('name_mobile', type=str, help="Receiver Name and Mobile, seperated by pipe", required=False, action='append')
+query_order_parser.add_argument('days', type=int, help="Number of Days", required=True)
 
 class OrderAPI(Resource):
 
     fields = {'orderNumber': fields.String(attribute='order_number'),
-              'usedTime': fields.DateTime(dt_format='iso8601', attribute='used_time'),}
+              'usedTime': fields.DateTime(dt_format='iso8601', attribute='used_time'),
+              'receiverName': fields.String(attribute='receiver_name')}
 
     @marshal_with(fields)
     def get(self):
         http_basic_auth(request.authorization)
         args = query_order_parser.parse_args()
-        query = Order.query
+        or_filters = []
+        if args['name_mobile']:
+            for name_mobile in args['name_mobile']:
+                parts = name_mobile.split('|')
+                if len(parts) <> 2:
+                    abort(500, message="Invalid name_mobile format")
+                name, mobile = parts
+                or_filters.append(and_(Order.receiver_name==name, Order.receiver_mobile==mobile))
         if args['id']:
-            query = query.filter(Order.receiver_id_number==args['id'])
-        elif args['name'] and args['mobile']:
-            query = query.filter(and_(Order.receiver_name==args["name"], Order.receiver_mobile==args["mobile"]))
-        else:
+            for id in args['id']:
+                or_filters.append(Order.receiver_id_number==id)
+        if not or_filters:
             abort(500, message="Invalid arguments")
-        orders = query.order_by(desc(Order.used_time)).all()
-        return orders
+        today = datetime.datetime.today()
+        start_day = today - datetime.timedelta(days=args['days']+1)
+        return Order.query.filter(or_(*or_filters)).filter(Order.used_time >= start_day).order_by(desc(Order.used_time)).all()
 
 api.add_resource(OrderAPI, '/order')
