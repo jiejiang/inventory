@@ -248,19 +248,24 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
     c_data = []
     sender_name = in_row[u'发件人名字']
-    sender_phone = str(in_row[u'发件人电话号码'])
+    sender_phone = in_row[u'发件人电话号码']
     sender_address = in_row[u'发件人地址']
     receiver_name = in_row[u'收件人名字（中文）']
-    receiver_mobile = str(in_row[u'收件人手机号（11位数）'])
+    receiver_mobile = in_row[u'收件人手机号（11位数）']
     receiver_address = in_row[u'收件人地址（无需包括省份和城市）']
     receiver_city = in_row[u'收件人城市（中文）']
-    receiver_post_code = str(in_row[u'收件人邮编'])
+    receiver_post_code = in_row[u'收件人邮编']
     n_package = in_row[u'包裹数量']
     package_weight = in_row[u'包裹重量（公斤）']
     length = in_row[u'长（厘米）']
     width = in_row[u'宽（厘米）']
     height = in_row[u'高（厘米）']
-    id_number = str(in_row[u'身份证号(EMS需要)'])
+    id_number = in_row[u'身份证号(EMS需要)']
+
+    for check_field in (sender_name, sender_phone, sender_address, receiver_name, receiver_mobile, receiver_address,
+                        receiver_city, receiver_post_code, n_package, id_number):
+        if pd.isnull(check_field):
+            raise Exception, u"第%d行数据不完整,请更正" % n_row
 
     if not isinstance(sender_name, basestring) or not isinstance(sender_address, basestring):
         raise Exception, u"第%d行发件人信息异常" % n_row
@@ -328,7 +333,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name \
             = calculate_item_info_from_db(n_row, item_name, item_count)
 
-        item_names.append(item_full_name)
+        item_names.append(u"%s (\u00D7%d)" % (item_full_name, item_count))
         total_price += sub_total_price
         total_item_count += item_count
         total_net_weight += net_weight
@@ -521,11 +526,11 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         if not receiver_sig in receiver_sig_to_order_numbers:
             receiver_sig_to_order_numbers[receiver_sig] = []
         if len(receiver_sig_to_order_numbers[receiver_sig]) >= 3:
-            raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同证件号码(%s)" % \
+            raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同证件号码(%s), 收件人: %s" % \
                              (i + 1, order_number,
                               " / ".join(["第%d行订单(%s)" % (x + 1, y)
                                           for x, y in receiver_sig_to_order_numbers[receiver_sig]]),
-                              receiver_sig)
+                              receiver_sig, order.receiver_name)
         receiver_sig_to_order_numbers[receiver_sig].append((i, order_number))
         uuid = str(order.job.uuid)
         if not uuid in uuid_to_order_numbers:
