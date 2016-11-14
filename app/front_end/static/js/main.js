@@ -1,7 +1,7 @@
 'use strict';
 
 window.postOrdersApp = angular.module('postOrdersApp',
-    ['ngRoute', 'restangular', 'ui.bootstrap', 'ngFileUpload']
+    ['ngRoute', 'restangular', 'ui.bootstrap', 'ngFileUpload', 'ngCookies']
     )
 
 .config(['$interpolateProvider', function($interpolateProvider) {

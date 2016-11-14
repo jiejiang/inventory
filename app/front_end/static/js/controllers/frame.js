@@ -1,7 +1,7 @@
 'use strict';
 
-postOrdersApp.controller('Frame', ['$scope', '$location', '$window', '$filter', '$log', 'Restangular',
-    function($scope, $location, $window, $filter, $log, Restangular) {
+postOrdersApp.controller('Frame', ['$scope', '$location', '$window', '$filter', '$log', 'Restangular', '$cookies',
+    function($scope, $location, $window, $filter, $log, Restangular, $cookies) {
 
     $scope.alerts = [];
 
@@ -32,6 +32,27 @@ postOrdersApp.controller('Frame', ['$scope', '$location', '$window', '$filter', 
         Restangular.one('orders').get().then(
             function(data){
                 $scope.stats = data.stats;
+                var alert_thresholds = data.alert_thresholds.map(function(item) {
+                    return parseInt(item, 10)
+                }).sort(function (a, b) {  return a - b;  });
+                angular.forEach($scope.stats, function(value, key) {
+                    var alerted = false;
+                    angular.forEach(alert_thresholds, function(v, k){
+                        var cookie_key = key + v;
+                        if (value.unused < v) {
+                            if (!alerted) {
+                                if (typeof($cookies.get(cookie_key)) === 'undefined') {
+                                    $window.alert("提醒: " + key + ' 不足' + v + ", 请尽快上载!");
+                                    alerted = true;
+                                    $cookies.put(cookie_key, true)
+                                }
+                            }
+                        } else {
+                            $cookies.remove(cookie_key);
+                        }
+                    });
+                });
+
                 $scope.used_count = data.used_count;
                 $scope.unretracted_count = data.unretracted_count;
                 $scope.retracted_count = data.retracted_count;

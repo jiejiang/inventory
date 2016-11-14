@@ -171,7 +171,8 @@ class OrderListAPI(Resource):
         used_count = used_query.count()
         unretracted_count = used_query.filter_by(retraction=None).count()
         return { 'stats' :stats, 'used_count' : used_query.count(), 'unretracted_count': unretracted_count,
-                 'retracted_count': used_count - unretracted_count }
+                 'retracted_count': used_count - unretracted_count,
+                 'alert_thresholds' : current_app.config['ALERT_THRESHOLDS']}
 
 class RetractionAPI(Resource):
     method_decorators = [login_required, ]
