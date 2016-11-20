@@ -321,18 +321,30 @@ class ProductInfo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False, index=True, unique=True)
     net_weight = db.Column(db.Float, nullable=False)
-    price_per_kg = db.Column(db.Float, nullable=False)
     full_name = db.Column(db.String(128), nullable=True)
     deprecated = db.Column(db.Boolean, default=False)
     count_infos = db.relationship("ProductCountInfo", backref='product_info', lazy='dynamic')
 
+    # new attribute
+    unit_price = db.Column(db.Float)
+    gross_weight = db.Column(db.Float)
+    tax_code = db.Column(db.String(64))
+    billing_unit = db.Column(db.String(32))
+    billing_unit_code = db.Column(db.String(32))
+    unit_per_item = db.Column(db.Float)
+
+    #deprecated
+    price_per_kg = db.Column(db.Float)
+
     @property
     def count_info_string(self):
+        """deprecated"""
         return "<br/>".join(sorted([u"%s件 -- %g KG" % (count_info.count, count_info.gross_weight_per_box)
                                   for count_info in self.count_infos]))
 
     @staticmethod
     def find_product_and_weight(item_name, item_count):
+        """deprecated"""
         return ProductInfo.query.filter(and_(ProductInfo.name==item_name, ProductInfo.deprecated==False))\
             .join(ProductCountInfo, ProductCountInfo.product_info_id==ProductInfo.id)\
             .add_column(ProductCountInfo.gross_weight_per_box)\

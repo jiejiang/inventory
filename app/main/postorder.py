@@ -21,6 +21,7 @@ from barcode.writer import ImageWriter
 from weasyprint import HTML, CSS
 from wand.image import Image
 from PyPDF2 import PdfFileMerger, PdfFileReader
+from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
 
 from ..models import City, Order, ProductInfo
 from .. import db
@@ -166,6 +167,24 @@ def calculate_item_info_from_db(n_row, item_name, item_count):
     return product_info.net_weight * item_count * product_info.price_per_kg, product_info.net_weight * item_count, \
         gross_weight_per_box, product_info.price_per_kg, \
         product_info.full_name if product_info.full_name else item_name
+
+
+def calculate_item_info_from_db_without_product_info(n_row, item_name, item_count):
+    item_name = "".join(item_name.strip().split()).decode("utf8")
+    product_info = ProductInfo.query.filter(and_(ProductInfo.name==item_name, ProductInfo.deprecated==False)).first()
+    if not product_info:
+        raise Exception, u"第%d行包含未注册商品: %s" % (n_row + 1, item_name)
+
+    # from sqlalchemy import inspect
+    # for c in inspect(product_info).mapper.column_attrs:
+    #     print c.key, getattr(product_info, c.key)
+    if product_info.unit_price is None or product_info.gross_weight is None or product_info.unit_per_item is None:
+        raise Exception, u"第%d行商品 [%s] 注册信息不完整" % (n_row + 1, item_name)
+
+    return product_info.unit_price * product_info.unit_per_item * item_count, product_info.net_weight * item_count, \
+        product_info.gross_weight * item_count, product_info.unit_price, \
+        product_info.full_name if product_info.full_name else item_name
+
 
 
 class NoTextImageWriter(ImageWriter):
@@ -330,8 +349,11 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         #
         # item_weight_convert = int(item_weight) * item_count / 1000.0
         # item_price = item_weight_convert * 90
-        sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name \
-            = calculate_item_info_from_db(n_row, item_name, item_count)
+
+        #sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name \
+        #    = calculate_item_info_from_db(n_row, item_name, item_count)
+        sub_total_price, net_weight, gross_weight, unit_price, item_full_name \
+            = calculate_item_info_from_db_without_product_info(n_row, item_name, item_count)
 
         item_names.append(u"%s (\u00D7%d)" % (item_full_name, item_count))
         total_price += sub_total_price
@@ -342,13 +364,13 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         p_data_list.append([
             ticket_number, sender_name, sender_address, sender_phone, receiver_name, receiver_mobile, receiver_city if receiver_city else receiver_province,
             receiver_post_code, full_address, item_full_name, item_count, sub_total_price, gross_weight, item_full_name,
-            net_weight, price_per_kg, u"CNY", id_number
+            net_weight, unit_price, u"CNY", id_number
         ])
         c_data_list.append([
             ticket_number, net_weight, gross_weight, item_count, item_full_name,
             receiver_name, receiver_post_code, full_address, receiver_mobile, id_number,
             sender_name, receiver_post_code, sender_address, sender_phone,
-            net_weight, sub_total_price, price_per_kg, gross_weight
+            net_weight, sub_total_price, unit_price, gross_weight
         ])
 
     assert(len(p_data_list) == len(c_data_list))
@@ -581,6 +603,10 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
     customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df.to_excel(os.path.join(
         output, u"江门申报单.xlsx".encode('utf8')), index=False)
+    receiver_columns = [u'收件人姓名', u'收件人电话', u'收件人地址', u'收件人证件号码']
+    receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
+    receiver_df.to_excel(os.path.join(
+        output, u"收件人信息.xlsx".encode('utf8')), index=False)
 
 if __name__ == "__main__":
     parser = OptionParser()
