@@ -178,13 +178,16 @@ def calculate_item_info_from_db_without_product_info(n_row, item_name, item_coun
     # from sqlalchemy import inspect
     # for c in inspect(product_info).mapper.column_attrs:
     #     print c.key, getattr(product_info, c.key)
-    if product_info.unit_price is None or product_info.gross_weight is None or product_info.unit_per_item is None:
+    if product_info.unit_price is None or product_info.gross_weight is None or product_info.unit_per_item is None \
+            or product_info.tax_code is None or product_info.billing_unit is None \
+            or product_info.billing_unit_code is None:
         raise Exception, u"第%d行商品 [%s] 注册信息不完整" % (n_row + 1, item_name)
 
     return product_info.unit_price * product_info.unit_per_item * item_count, product_info.net_weight * item_count, \
         product_info.gross_weight * item_count, product_info.unit_price, \
-        product_info.full_name if product_info.full_name else item_name
-
+        product_info.full_name if product_info.full_name else item_name, \
+        product_info.net_weight, product_info.tax_code, product_info.billing_unit, product_info.billing_unit_code, \
+        product_info.unit_per_item
 
 
 class NoTextImageWriter(ImageWriter):
@@ -352,7 +355,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
 
         #sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name \
         #    = calculate_item_info_from_db(n_row, item_name, item_count)
-        sub_total_price, net_weight, gross_weight, unit_price, item_full_name \
+        sub_total_price, net_weight, gross_weight, unit_price, item_full_name, net_weight_per_item, tax_code, \
+        billing_unit, billing_unit_code, unit_per_item \
             = calculate_item_info_from_db_without_product_info(n_row, item_name, item_count)
 
         item_names.append(u"%s (\u00D7%d)" % (item_full_name, item_count))
@@ -367,25 +371,27 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
             net_weight, unit_price, u"CNY", id_number
         ])
         c_data_list.append([
-            ticket_number, net_weight, gross_weight, item_count, item_full_name,
-            receiver_name, receiver_post_code, full_address, receiver_mobile, id_number,
-            sender_name, receiver_post_code, sender_address, sender_phone,
-            net_weight, sub_total_price, unit_price, gross_weight
+            ticket_number, item_full_name, tax_code, item_count, net_weight, gross_weight, net_weight_per_item,
+            sub_total_price, unit_price, sub_total_price, sub_total_price, unit_per_item, billing_unit_code,
+            receiver_name, full_address, receiver_name, receiver_mobile, sender_name, sender_address, id_number,
+            i + 1,
         ])
 
     assert(len(p_data_list) == len(c_data_list))
 
-    for p in p_data_list:
-        p[10] = total_item_count
-        p[11] = total_price
-        p[12] = total_gross_weight
-        p_data.append(p)
+    # for p in p_data_list:
+    #     p[10] = total_item_count
+    #     p[11] = total_price
+    #     p[12] = total_gross_weight
+    #     p_data.append(p)
+    p_data = p_data_list
 
-    for c in c_data_list:
-        c[1] = total_net_weight
-        c[2] = total_gross_weight
-        c[3] = total_item_count
-        c_data.append(c)
+    # for c in c_data_list:
+    #     c[1] = total_net_weight
+    #     c[2] = total_gross_weight
+    #     c[3] = total_item_count
+    #     c_data.append(c)
+    c_data = c_data_list
 
     total_price = "%.2f" % total_price
     if total_price.endswith(".00") and len(total_price) > 3:
@@ -401,10 +407,10 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         u'邮编', u'收件人地址', u'内件名称', u'数量', u'总价（元）', u'毛重（KG）', u'物品名称',
         u'数量.1', u'单价', u'币别', u'备注'
     ]), pd.DataFrame(c_data, columns=[
-        u'企业运单编号', u'分运单净重', u'分运单毛重', u'箱件数', u'主要商品',
-        u'收件人姓名', u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件号码',
-        u'发货人名称', u'发货人省市区代码', u'发货人地址', u'发货人电话',
-        u'净重/数量', u'商品总价', u'商品单价 货物的单价，RMB金额（元）', u'商品毛重'
+        u'分运单号', u'货物名称', u'商品编码', u'件数', u'净重(KG)', u'毛重(KG)', u'规格/型号',
+        u'成交总价', u'申报单价', u'申报总价', u'价值', u'申报数量', u'申报计量单位',
+        u'收件人', u'收件人地址', u'货主单位名称', u'电话号码(固话)', u'发件人', u'发件人地址', u'收发件人证件号',
+        u'随附单证编号'
     ])
 
 
@@ -431,16 +437,13 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
                        u'数量', u'总价（元）', u'毛重（KG）', u'税号', u'物品名称', u'品牌', u'数量.1',
                        u'单位', u'单价', u'币别', u'备注']
 
-    customs_columns = [u'订单编号', u'物流企业备案号', u'电商平台备案号', u'企业运单编号', u'物流状态', u'运费', u'运费币制',
-                       u'运输方式', u'运输工具名称', u'包装种类', u'保价费', u'保价费币制', u'分运单净重', u'分运单毛重', u'箱件数', u'主要商品',
-                       u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码', u'收件人姓名', u'收件人所在国家(地区）代码',
-                       u'收件人省市区代码', u'收件人地址', u'收件人电话', u'收件人证件类型', u'收件人证件号码', u'包裹单号',
-                       u'发货人名称', u'发货人所在国家(地区）代码', u'发货人省市区代码', u'发货人地址', u'发货人电话',
-                       u'子订单编号', u'电商商户企业备案号', u'商品货号', u'原产国（地区）/最终目的国（地区）代码', u'计量单位',
-                       u'净重/数量', u'商品总价', u'载货清单号', u'商品备案号', u'商品单价 货物的单价，RMB金额（元）', u'商品币制',
-                       u'子订单备注', u'进出口标识', u'是否退运', u'原运单号', u'退运原因', u'运输工具航次(班)号',
-                       u'码头/货场代码（为物流监控备用）', u'商品毛重', u'仓单申报类型N表示新增M修改',
-                       u'第一法定数量CD类必填，AB类不填', ]
+    customs_columns = [u'序号', u'经营单位编号', u'经营单位名称', u'分运单号', u'货物名称', u'商品编码', u'件数',
+                       u'净重(KG)', u'毛重(KG)', u'规格/型号', u'成交总价', u'申报单价', u'申报总价', u'价值', u'合同号',
+                       u'申报数量', u'申报计量单位', u'第一（法定）数量', u'第一（法定）计量单位', u'第二（法定）数量',
+                       u'第二（法定）计量单位', u'收件人', u'收件人地址', u'货主单位名称', u'货主单位代码', u'贸易国别',
+                       u'产销国', u'电话号码(固话)', u'发件人国别', u'发件人', u'发件人地址', u'货主单位地区代码',
+                       u'收发件人证件号', u'收发件人证件类型', u'包装种类', u'用途', u'随附单证类型', u'随附单证编号',
+                       u'类别']
 
     package_df = pd.DataFrame([], columns=package_columns)
     package_data = [package_df]
@@ -479,30 +482,16 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
                               columns=package_columns, index_label="NO")
 
     customs_final_df = pd.concat(customs_data, ignore_index=True)
-    customs_final_df[u'订单编号'] = None
-    customs_final_df[u'物流企业备案号'] = 'PTE681320150000003'
-    customs_final_df[u'电商平台备案号'] = 'PTE681320150000004'
-    customs_final_df[u'物流状态'] = '0'
-    customs_final_df[u'运费'] = 0
-    customs_final_df[u'运费币制'] = '142'
-    customs_final_df[u'运输方式'] = '4'
-    customs_final_df[u'包装种类'] = '4'
-    customs_final_df[u'保价费'] = 0
-    customs_final_df[u'保价费币制'] = '142'
-    customs_final_df[u'进出口岸代码  商品实际进出我国关境口岸海关的关区代码'] = '6841'
-    customs_final_df[u'收件人所在国家(地区）代码'] = '142'
-    customs_final_df[u'收件人证件类型'] = '1'
-    customs_final_df[u'发货人所在国家(地区）代码'] = '303'
-    customs_final_df[u'电商商户企业备案号'] = 'PTE681320150000004'
-    customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
-    customs_final_df[u'原产国（地区）/最终目的国（地区）代码'] = '303'
-    customs_final_df[u'计量单位'] = '035'
-    customs_final_df[u'商品备案号'] = '01010700'
-    customs_final_df[u'商品备案号'] = '01010700'
-    customs_final_df[u'商品币制'] = '142'
-    customs_final_df[u'进出口标识'] = 'I'
-    customs_final_df[u'码头/货场代码（为物流监控备用）'] = '6841'
-    customs_final_df[u'仓单申报类型N表示新增M修改'] = 'N'
+    customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
+    customs_final_df[u'货主单位代码'] = '4407986007'
+    customs_final_df[u'贸易国别'] = '303'
+    customs_final_df[u'产销国'] = '303'
+    customs_final_df[u'发件人国别'] = '303'
+    customs_final_df[u'货主单位地区代码'] = '44079'
+    customs_final_df[u'收发件人证件类型'] = '1'
+    customs_final_df[u'包装种类'] = '2'
+    customs_final_df[u'用途'] = '11'
+    customs_final_df[u'类别'] = 'B'
 
     customs_final_df.to_excel(os.path.join(output, u"江门申报单.xlsx".encode('utf8')),
                               columns=customs_columns, index=False)
@@ -577,20 +566,21 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
                 u'备注': lambda x: str(x),
             })
             customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
-                u"企业运单编号": lambda x: str(x),
-                u"收件人省市区代码": lambda x: str(x),
-                u"收件人电话": lambda x: str(x),
-                u"收件人证件号码": lambda x: str(x),
-                u"发货人省市区代码": lambda x: str(x),
-                u"发货人电话": lambda x: str(x),
-                u"商品备案号": lambda x: str(x),
-                u"发货人电话": lambda x: str(x),
-                u'计量单位': lambda x: str(x),
+                u"分运单号": lambda x: str(x),
+                u"商品编码": lambda x: str(x),
+                u'申报计量单位': lambda x: str(x),
+                u'货主单位代码': lambda x: str(x),
+                u"电话号码(固话)": lambda x: str(x),
+                u"货主单位地区代码": lambda x: str(x),
+                u"收发件人证件号": lambda x: str(x),
+                u"贸易国别": lambda x: str(x),
+                u"产销国": lambda x: str(x),
+                u"发件人国别": lambda x: str(x),
             })
             sub_package_df = package_df[
                 package_df[u"快件单号"].isin(order_number_set)]
             sub_customs_df = customs_df[
-                customs_df[u"企业运单编号"].isin(order_number_set)]
+                customs_df[u"分运单号"].isin(order_number_set)]
             package_dfs.append(sub_package_df)
             customs_dfs.append(sub_customs_df)
 
@@ -599,11 +589,10 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
     package_final_df.to_excel(os.path.join(
         output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
     customs_final_df = pd.concat(customs_dfs, ignore_index=True)
-    customs_final_df[u'订单编号'] = None
-    customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
+    customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
     customs_final_df.to_excel(os.path.join(
         output, u"江门申报单.xlsx".encode('utf8')), index=False)
-    receiver_columns = [u'收件人姓名', u'收件人电话', u'收件人地址', u'收件人证件号码']
+    receiver_columns = [u'收件人', u'电话号码(固话)', u'收件人地址', u'收发件人证件号']
     receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
     receiver_df.to_excel(os.path.join(
         output, u"收件人信息.xlsx".encode('utf8')), index=False)
