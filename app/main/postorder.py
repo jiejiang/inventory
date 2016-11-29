@@ -311,9 +311,9 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         (sender_name, sender_address, sender_phone))
     order.receiver_address = ", ".join(
         (receiver_address, receiver_city, receiver_post_code))
-    order.receiver_mobile = receiver_mobile
-    order.receiver_id_number = id_number
-    order.receiver_name = receiver_name
+    order.receiver_mobile = receiver_mobile.strip()
+    order.receiver_id_number = id_number.strip()
+    order.receiver_name = receiver_name.strip()
     if job:
         order.job = job
     ticket_number = order.order_number
@@ -519,7 +519,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
     all_order_numbers = set()
     uuid_to_order_numbers = {}
     for i, order_number in enumerate(order_numbers):
-        order_number = str(order_number)
+        order_number = str(order_number).strip()
         if order_number in all_order_numbers:
             continue
         else:
