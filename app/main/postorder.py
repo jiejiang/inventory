@@ -180,14 +180,14 @@ def calculate_item_info_from_db_without_product_info(n_row, item_name, item_coun
     #     print c.key, getattr(product_info, c.key)
     if product_info.unit_price is None or product_info.gross_weight is None or product_info.unit_per_item is None \
             or product_info.tax_code is None or product_info.billing_unit is None \
-            or product_info.billing_unit_code is None:
+            or product_info.billing_unit_code is None or product_info.specification is None:
         raise Exception, u"第%d行商品 [%s] 注册信息不完整" % (n_row + 1, item_name)
 
     return product_info.unit_price * product_info.unit_per_item * item_count, product_info.net_weight * item_count, \
         product_info.gross_weight * item_count, product_info.unit_price, \
         product_info.full_name if product_info.full_name else item_name, \
         product_info.net_weight, product_info.tax_code, product_info.billing_unit, product_info.billing_unit_code, \
-        product_info.unit_per_item
+        product_info.unit_per_item, product_info.specification
 
 
 class NoTextImageWriter(ImageWriter):
@@ -316,6 +316,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     order.receiver_name = receiver_name.strip()
     if job:
         order.job = job
+        job.version = "v2"
     ticket_number = order.order_number
     full_address = "".join(filter(
         lambda x: x.strip(), (receiver_province, receiver_city, receiver_address)))
@@ -356,7 +357,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         #sub_total_price, net_weight, gross_weight, price_per_kg, item_full_name \
         #    = calculate_item_info_from_db(n_row, item_name, item_count)
         sub_total_price, net_weight, gross_weight, unit_price, item_full_name, net_weight_per_item, tax_code, \
-        billing_unit, billing_unit_code, unit_per_item \
+        billing_unit, billing_unit_code, unit_per_item, specification \
             = calculate_item_info_from_db_without_product_info(n_row, item_name, item_count)
 
         item_names.append(u"%s (\u00D7%d)" % (item_full_name, item_count))
@@ -371,8 +372,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
             net_weight, unit_price, u"CNY", id_number
         ])
         c_data_list.append([
-            ticket_number, item_full_name, tax_code, item_count, net_weight, gross_weight, net_weight_per_item,
-            sub_total_price, unit_price, sub_total_price, sub_total_price, unit_per_item, billing_unit_code,
+            ticket_number, item_full_name, tax_code, item_count, net_weight, gross_weight, specification,
+            sub_total_price, unit_price, sub_total_price, sub_total_price, unit_per_item * item_count, billing_unit_code,
             receiver_name, full_address, receiver_name, receiver_mobile, sender_name, sender_address, id_number,
             i + 1,
         ])
@@ -518,6 +519,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
     receiver_sig_to_order_numbers = {}
     all_order_numbers = set()
     uuid_to_order_numbers = {}
+    job_versions = {}
     for i, order_number in enumerate(order_numbers):
         order_number = str(order_number).strip()
         if order_number in all_order_numbers:
@@ -547,55 +549,111 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         if not uuid in uuid_to_order_numbers:
             uuid_to_order_numbers[uuid] = set()
         uuid_to_order_numbers[uuid].add(order_number)
+        job_versions[uuid] = order.job.version if order.job.version else "v1"
         if retraction:
             order.retraction = retraction
 
-    package_dfs = []
-    customs_dfs = []
+    version_to_dfs = {}
+
     for uuid, order_number_set in uuid_to_order_numbers.items():
+        version = job_versions[uuid]
+        if not version in version_to_dfs:
+            version_to_dfs[version] = {'package_dfs': [], 'customs_dfs' : []}
+        package_dfs = version_to_dfs[version]['package_dfs']
+        customs_dfs = version_to_dfs[version]['customs_dfs']
         job_file = os.path.join(download_folder, uuid, uuid + '.zip')
         if not os.path.exists(job_file):
             raise Exception, u"历史数据丢失:%s" % uuid
         with zipfile.ZipFile(job_file) as z:
-            package_df = pd.read_excel(z.open(u"机场报关单.xlsx"), index_col=0, converters={
-                u'快件单号': lambda x: str(x),
-                u'电话号码': lambda x: str(x),
-                u'电话号码.1': lambda x: str(x),
-                u'邮编': lambda x: str(x),
-                u'税号': lambda x: str(x),
-                u'备注': lambda x: str(x),
-            })
-            customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
-                u"分运单号": lambda x: str(x),
-                u"商品编码": lambda x: str(x),
-                u'申报计量单位': lambda x: str(x),
-                u'货主单位代码': lambda x: str(x),
-                u"电话号码(固话)": lambda x: str(x),
-                u"货主单位地区代码": lambda x: str(x),
-                u"收发件人证件号": lambda x: str(x),
-                u"贸易国别": lambda x: str(x),
-                u"产销国": lambda x: str(x),
-                u"发件人国别": lambda x: str(x),
-            })
-            sub_package_df = package_df[
-                package_df[u"快件单号"].isin(order_number_set)]
-            sub_customs_df = customs_df[
-                customs_df[u"分运单号"].isin(order_number_set)]
+            if version == "v1":
+                package_df = pd.read_excel(z.open(u"机场报关单.xlsx"), index_col=0, converters={
+                    u'快件单号': lambda x: str(x),
+                    u'电话号码': lambda x: str(x),
+                    u'电话号码.1': lambda x: str(x),
+                    u'邮编': lambda x: str(x),
+                    u'税号': lambda x: str(x),
+                    u'备注': lambda x: str(x),
+                })
+                customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
+                    u"企业运单编号": lambda x: str(x),
+                    u"收件人省市区代码": lambda x: str(x),
+                    u"收件人电话": lambda x: str(x),
+                    u"收件人证件号码": lambda x: str(x),
+                    u"发货人省市区代码": lambda x: str(x),
+                    u"发货人电话": lambda x: str(x),
+                    u"商品备案号": lambda x: str(x),
+                    u"发货人电话": lambda x: str(x),
+                    u'计量单位': lambda x: str(x),
+                })
+                sub_package_df = package_df[
+                    package_df[u"快件单号"].isin(order_number_set)]
+                sub_customs_df = customs_df[
+                    customs_df[u"企业运单编号"].isin(order_number_set)]
+
+            elif version == "v2":
+                package_df = pd.read_excel(z.open(u"机场报关单.xlsx"), index_col=0, converters={
+                    u'快件单号': lambda x: str(x),
+                    u'电话号码': lambda x: str(x),
+                    u'电话号码.1': lambda x: str(x),
+                    u'邮编': lambda x: str(x),
+                    u'税号': lambda x: str(x),
+                    u'备注': lambda x: str(x),
+                })
+                customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
+                    u"分运单号": lambda x: str(x),
+                    u"商品编码": lambda x: str(x),
+                    u'申报计量单位': lambda x: str(x),
+                    u'货主单位代码': lambda x: str(x),
+                    u"电话号码(固话)": lambda x: str(x),
+                    u"货主单位地区代码": lambda x: str(x),
+                    u"收发件人证件号": lambda x: str(x),
+                    u"贸易国别": lambda x: str(x),
+                    u"产销国": lambda x: str(x),
+                    u"发件人国别": lambda x: str(x),
+                })
+                sub_package_df = package_df[
+                    package_df[u"快件单号"].isin(order_number_set)]
+                sub_customs_df = customs_df[
+                    customs_df[u"分运单号"].isin(order_number_set)]
+            else:
+                raise Exception, "Version not supported %s" % version
+
             package_dfs.append(sub_package_df)
             customs_dfs.append(sub_customs_df)
 
-    package_final_df = pd.concat(package_dfs, ignore_index=True)
-    package_final_df.index += 1
-    package_final_df.to_excel(os.path.join(
-        output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
-    customs_final_df = pd.concat(customs_dfs, ignore_index=True)
-    customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
-    customs_final_df.to_excel(os.path.join(
-        output, u"江门申报单.xlsx".encode('utf8')), index=False)
-    receiver_columns = [u'收件人', u'电话号码(固话)', u'收件人地址', u'收发件人证件号']
-    receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
-    receiver_df.to_excel(os.path.join(
-        output, u"收件人信息.xlsx".encode('utf8')), index=False)
+    for version, data in version_to_dfs.iteritems():
+        package_dfs = data['package_dfs']
+        customs_dfs = data['customs_dfs']
+        if version == "v1":
+            package_final_df = pd.concat(package_dfs, ignore_index=True)
+            package_final_df.index += 1
+            package_final_df.to_excel(os.path.join(
+                output, u"机场报关单_%s.xlsx".encode('utf8') % version), index_label="NO")
+            customs_final_df = pd.concat(customs_dfs, ignore_index=True)
+            customs_final_df[u'订单编号'] = None
+            customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
+            customs_final_df.to_excel(os.path.join(
+                output, u"江门申报单_%s.xlsx".encode('utf8') % version), index=False)
+            receiver_columns = [u'收件人证件号码', u'收件人姓名']
+            receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
+            receiver_df.to_excel(os.path.join(
+                output, u"收件人信息_%s.xlsx".encode('utf8') % version), index=False)
+
+        elif version == "v2":
+            package_final_df = pd.concat(package_dfs, ignore_index=True)
+            package_final_df.index += 1
+            package_final_df.to_excel(os.path.join(
+                output, u"机场报关单_%s.xlsx".encode('utf8') % version), index_label="NO")
+            customs_final_df = pd.concat(customs_dfs, ignore_index=True)
+            customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
+            customs_final_df.to_excel(os.path.join(
+                output, u"江门申报单_%s.xlsx".encode('utf8') % version), index=False)
+            receiver_columns = [u'收发件人证件号', u'收件人']
+            receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
+            receiver_df.to_excel(os.path.join(
+                output, u"收件人信息_%s.xlsx".encode('utf8') % version), index=False)
+        else:
+            raise Exception, "Version not supported too %s" % version
 
 if __name__ == "__main__":
     parser = OptionParser()

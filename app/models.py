@@ -15,6 +15,7 @@ class Job(db.Model):
     completion_time = db.Column(db.DateTime, default=None)
     message = db.Column(db.Text)
     orders = db.relationship("Order", backref='job', lazy='dynamic')
+    version = db.Column(db.String(16), nullable=True, default="")
 
     class Status:
         WAITING = 0
@@ -332,6 +333,7 @@ class ProductInfo(db.Model):
     billing_unit = db.Column(db.String(32))
     billing_unit_code = db.Column(db.String(32))
     unit_per_item = db.Column(db.Float)
+    specification = db.Column(db.String(64))
 
     #deprecated
     price_per_kg = db.Column(db.Float)
