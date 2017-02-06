@@ -277,6 +277,7 @@ class Order(db.Model):
         self.used_time = None
         self.sender_address = None
         self.receiver_address = None
+        self.receiver_name = None
         self.receiver_id_number = None
         self.receiver_mobile = None
         self.job_id = None
