@@ -272,6 +272,16 @@ class Order(db.Model):
             YUNDA : u"韵达单号",
         }
 
+    def make_reusable(self):
+        self.used = False
+        self.used_time = None
+        self.sender_address = None
+        self.receiver_address = None
+        self.receiver_id_number = None
+        self.receiver_mobile = None
+        self.job_id = None
+        self.retraction_id = None
+
     @property
     def type_name(self):
         if self.type in Order.Type.types:
