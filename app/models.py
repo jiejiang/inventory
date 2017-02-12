@@ -16,6 +16,7 @@ class Job(db.Model):
     message = db.Column(db.Text)
     orders = db.relationship("Order", backref='job', lazy='dynamic')
     version = db.Column(db.String(16), nullable=True, default="")
+    issuer = db.Column(db.String(128), index=True, nullable=True)
 
     class Status:
         WAITING = 0
@@ -48,9 +49,9 @@ class Job(db.Model):
         return self.status == Job.Status.COMPLETED
 
     @staticmethod
-    def new():
+    def new(issuer=None):
         id = str(uuid.uuid4())
-        job = Job(uuid=id, percentage=0, status=Job.Status.WAITING)
+        job = Job(uuid=id, percentage=0, status=Job.Status.WAITING, issuer=issuer)
         db.session.add(job)
         db.session.commit()
         return job

@@ -9,7 +9,6 @@ import os, datetime, zipfile
 from flask import request, current_app, Response
 from flask_restful import Resource, fields, marshal_with
 from flask_restful import abort, reqparse
-from flask_user import login_required
 from redis import ConnectionError
 from sqlalchemy.orm import exc
 from sqlalchemy import func, desc, or_, and_
@@ -19,7 +18,7 @@ from .. import db
 from ..models import Job, Order, Retraction
 from ..util import time_to_filename
 from ..main.postorder import read_order_numbers, retract_from_order_numbers
-from auth import http_basic_auth
+from auth import http_basic_auth, login_required
 
 STREAM_BUF_SIZE = 2048
 
@@ -38,6 +37,8 @@ class BatchOrderListAPI(Resource):
     def post(self):
         from ..main.jobs import batch_order
 
+        issuer = request.form['issuer'] if 'issuer' in request.form else None
+
         file = request.files['file']
         if file:
             job = None
@@ -45,7 +46,7 @@ class BatchOrderListAPI(Resource):
                 ext = file.filename.split('.')[-1].lower()
                 if ext <> "xlt" and ext <> "xlsx" and ext <> "xls":
                     raise Exception, 'Only .xlt, .xlsx or .xls file is supported!'
-                job = Job.new()
+                job = Job.new(issuer)
                 fileid = job.uuid + '.' + ext
                 if not os.path.exists(current_app.config['UPLOAD_FOLDER']):
                     os.makedirs(current_app.config['UPLOAD_FOLDER'])
