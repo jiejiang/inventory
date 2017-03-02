@@ -54,10 +54,13 @@ if __name__ == '__main__':
             print >> sys.stderr, inst.message.encode('utf-8')
 
     @manager.command
-    def retract(input, output):
+    def retract(input, output, route):
         try:
+            if not route in app.config['ROUTE_CONFIG']:
+                raise Exception, "No route"
+            route_config = app.config['ROUTE_CONFIG'][route]
             order_numbers = read_order_numbers(input)
-            retract_from_order_numbers(app.config['DOWNLOAD_FOLDER'], order_numbers, output)
+            retract_from_order_numbers(app.config['DOWNLOAD_FOLDER'], order_numbers, output, route_config)
         except Exception, inst:
             import traceback
             traceback.print_exc(sys.stderr)

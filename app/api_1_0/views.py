@@ -179,6 +179,12 @@ class RetractionAPI(Resource):
     method_decorators = [login_required, ]
 
     def post(self):
+        if not 'route' in request.form:
+            abort(500, message=u"无线路选择")
+        route = request.form['route']
+        if not route in current_app.config['ROUTE_CONFIG']:
+            abort(500, message=u"线路选择错误")
+        route_config = current_app.config['ROUTE_CONFIG'][route]
         file = request.files['file']
         if file:
             curdir = os.getcwd()
@@ -197,7 +203,8 @@ class RetractionAPI(Resource):
                 if os.path.exists(outdir):
                     raise Exception, u"uuid目录已用:%s" % retraction.uuid
                 os.makedirs(outdir)
-                retract_from_order_numbers(current_app.config['DOWNLOAD_FOLDER'], order_numbers, tmpdir, retraction)
+                retract_from_order_numbers(current_app.config['DOWNLOAD_FOLDER'], order_numbers, tmpdir, route_config,
+                                           retraction)
                 outfile = os.path.abspath(os.path.join(outdir, retraction.uuid + ".zip"))
                 os.chdir(tmpdir)
                 zf = zipfile.ZipFile(outfile, "w", compression=zipfile.ZIP_DEFLATED)

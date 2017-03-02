@@ -511,7 +511,8 @@ def read_order_numbers(inxlsx):
     return order_numbers
 
 
-def retract_from_order_numbers(download_folder, order_numbers, output, retraction=None):
+def retract_from_order_numbers(download_folder, order_numbers, output, route_config, retraction=None):
+    route_name = route_config['name']
     if not os.path.exists(output):
         os.makedirs(output)
 
@@ -538,9 +539,9 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
         receiver_sig = order.receiver_id_number
         if not receiver_sig in receiver_sig_to_order_numbers:
             receiver_sig_to_order_numbers[receiver_sig] = []
-        if len(receiver_sig_to_order_numbers[receiver_sig]) >= 1:
-            raise Exception, u"单个收件人超过最大订单数: 第%d行订单(%s)与[ %s ]包含相同证件号码(%s), 收件人: %s" % \
-                             (i + 1, order_number,
+        if len(receiver_sig_to_order_numbers[receiver_sig]) >= route_config['max_order_number_per_receiver']:
+            raise Exception, u"单个收件人超过最大订单数(%d): 第%d行订单(%s)与[ %s ]包含相同证件号码(%s), 收件人: %s" % \
+                             (route_config['max_order_number_per_receiver'], i + 1, order_number,
                               " / ".join(["第%d行订单(%s)" % (x + 1, y)
                                           for x, y in receiver_sig_to_order_numbers[receiver_sig]]),
                               receiver_sig, order.receiver_name)
@@ -624,34 +625,55 @@ def retract_from_order_numbers(download_folder, order_numbers, output, retractio
     for version, data in version_to_dfs.iteritems():
         package_dfs = data['package_dfs']
         customs_dfs = data['customs_dfs']
+
+        def validate_route(customs_df):
+            product_exclude = route_config['product_exclude'].strip() if 'product_exclude' in route_config else None
+            if product_exclude:
+                if version == "v1":
+                    product_col = u"主要商品"
+                elif version == "v2":
+                    product_col = u"货物名称"
+                else:
+                    raise Exception, "Version not supported too %s" % version
+                if customs_df[product_col].str.contains(product_exclude).any():
+                    raise Exception, u"包含违禁产品: %s" % product_exclude
+
         if version == "v1":
-            package_final_df = pd.concat(package_dfs, ignore_index=True)
-            package_final_df.index += 1
-            package_final_df.to_excel(os.path.join(
-                output, u"机场报关单_%s.xlsx".encode('utf8') % version), index_label="NO")
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
             customs_final_df[u'订单编号'] = None
             customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
-            customs_final_df.to_excel(os.path.join(
-                output, u"江门申报单_%s.xlsx".encode('utf8') % version), index=False)
-            receiver_columns = [u'收件人证件号码', u'收件人姓名']
-            receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
-            receiver_df.to_excel(os.path.join(
-                output, u"收件人信息_%s.xlsx".encode('utf8') % version), index=False)
 
-        elif version == "v2":
+            validate_route(customs_final_df)
+
+            customs_final_df.to_excel(os.path.join(
+                output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
+
             package_final_df = pd.concat(package_dfs, ignore_index=True)
             package_final_df.index += 1
             package_final_df.to_excel(os.path.join(
-                output, u"机场报关单_%s.xlsx".encode('utf8') % version), index_label="NO")
+                output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
+            receiver_columns = [u'收件人证件号码', u'收件人姓名']
+            receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
+            receiver_df.to_excel(os.path.join(
+                output, u"收件人信息_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
+
+        elif version == "v2":
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
             customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
+
+            validate_route(customs_final_df)
+
             customs_final_df.to_excel(os.path.join(
-                output, u"江门申报单_%s.xlsx".encode('utf8') % version), index=False)
+                output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
+
+            package_final_df = pd.concat(package_dfs, ignore_index=True)
+            package_final_df.index += 1
+            package_final_df.to_excel(os.path.join(
+                output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
             receiver_columns = [u'收发件人证件号', u'收件人']
             receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
             receiver_df.to_excel(os.path.join(
-                output, u"收件人信息_%s.xlsx".encode('utf8') % version), index=False)
+                output, u"收件人信息_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
         else:
             raise Exception, "Version not supported too %s" % version
 
