@@ -510,6 +510,21 @@ def read_order_numbers(inxlsx):
     order_numbers = df[u"提取单号"]
     return order_numbers
 
+def save_customs_df(route_config, version, costums_df, output):
+    route_name = route_config['name']
+    if version <> "v2":
+        raise Exception, "Version not supported for save_customs_df: %s" % version
+    if route_config['save_customs_df'].strip() == 'bc':
+
+        bc_customs_df, bc_business_df = None, None
+
+        bc_customs_df.to_excel(os.path.join(
+            output, u"%s申报单_%s.xlsx".encode('utf8') % (route_name, version)), index=False)
+        bc_business_df.to_excel(os.path.join(
+            output, u"%s支付企业货单_%s.xlsx".encode('utf8') % (route_name, version)), index=False)
+    else:
+        raise Exception, "Unknown 'save_customs_df': %s" % route_config['save_customs_df']
+
 
 def retract_from_order_numbers(download_folder, order_numbers, output, route_config, retraction=None):
     route_name = route_config['name']
@@ -655,6 +670,9 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
             validate_route(customs_final_df)
 
+            if 'save_customs_df' in route_config:
+                raise Exception, "save_customs_df not supported in v1"
+
             customs_final_df.to_excel(os.path.join(
                 output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
 
@@ -673,8 +691,11 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
             validate_route(customs_final_df)
 
-            customs_final_df.to_excel(os.path.join(
-                output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
+            if 'save_customs_df' in route_config:
+                save_customs_df(route_config, version, customs_dfs, output)
+            else:
+                customs_final_df.to_excel(os.path.join(
+                    output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
 
             package_final_df = pd.concat(package_dfs, ignore_index=True)
             package_final_df.index += 1
