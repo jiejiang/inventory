@@ -510,13 +510,89 @@ def read_order_numbers(inxlsx):
     order_numbers = df[u"提取单号"]
     return order_numbers
 
-def save_customs_df(route_config, version, costums_df, output):
+def save_customs_df(route_config, version, customs_df, output):
     route_name = route_config['name']
     if version <> "v2":
         raise Exception, "Version not supported for save_customs_df: %s" % version
     if route_config['save_customs_df'].strip() == 'bc':
 
-        bc_customs_df, bc_business_df = None, None
+        bc_customs_columns = [u'订单编号', u'电商平台代码', u'电商平台名称', u'电商企业代码', u'电商企业名称',
+                              u'物流运单编号', u'贸易方式', u'账册编号', u'订购人身份证号', u'订购人姓名', u'订购人电话',
+                              u'收货人姓名', u'收货人电话', u'收件地址', u'许可证件号', u'起运国/地区', u'运费', u'保费',
+                              u'包装种类', u'毛重(公斤)', u'净重(公斤)', u'商品序号', u'账册备案号', u'商品编码',
+                              u'商品名称', u'商品规格型号', u'原产国/地区', u'数量', u'法定数量', u'第二数量', u'计量单位',
+                              u'第一计量单位', u'第二计量单位', u'单价', u'总价']
+        bc_business_columns = [u'序号', u'订单号', u'订单编号', u'支付号', u'运杂费', u'非现金抵扣金额', u'代扣税款',
+                               u'件数', u'总毛重', u'总净重', u'订单总金额', u'运费', u'收件人姓名', u'收件人手机',
+                               u'收件人身份证号', u'收件人地址', u'收货地址行政区划代码', u'商品批次号', u'商品序号',
+                               u'单位', u'原产国', u'商品名称', u'单价', u'数量', u'总价']
+
+        bc_customs_df = pd.DataFrame([], columns=bc_customs_columns)
+        for bc_column, column in ((u'物流运单编号', u'分运单号'),
+                                  (u'订购人身份证号', u'收发件人证件号'),
+                                  (u'订购人姓名', u'收件人'),
+                                  (u'订购人电话', u'电话号码(固话)'),
+                                  (u'收货人姓名', u'收件人'),
+                                  (u'收货人电话', u'电话号码(固话)'),
+                                  (u'收件地址', u'收件人地址'),
+                                  (u'商品序号', u'随附单证编号'),
+                                  (u'商品名称', u'货物名称'),
+                                  (u'商品规格型号', u'规格/型号'),
+                                  (u'数量', u'件数'),
+                                  (u'法定数量', u'申报数量'),
+                                  (u'单价', u'申报单价'),
+                                  (u'总价', u'成交总价')):
+            bc_customs_df[bc_column] = customs_df[column]
+        sum_df = customs_df[[u"分运单号", u'净重(KG)', u'毛重(KG)', u'成交总价']].groupby(u"分运单号").sum().reset_index()
+        sum_df.rename(columns={u"分运单号": u'物流运单编号'}, inplace=True)
+        bc_customs_df = pd.merge(bc_customs_df, sum_df, on=u'物流运单编号')
+        for bc_column, column in ((u'净重(公斤)', u'净重(KG)'), (u'毛重(公斤)', u'毛重(KG)')):
+            bc_customs_df[bc_column] = bc_customs_df[column]
+            del bc_customs_df[column]
+        bc_customs_df[u"电商平台代码"] = "1234567890"
+        bc_customs_df[u"电商平台名称"] = u"淘宝科技有限公司"
+        bc_customs_df[u"电商企业代码"] = "1122334455"
+        bc_customs_df[u"电商企业名称"] = "鹤山XX电子商务有限公司"
+        bc_customs_df[u"贸易方式"] = "9610"
+        bc_customs_df[u"起运国/地区"] = 303
+        bc_customs_df[u"运费"] = 0
+        bc_customs_df[u"保费"] = 0
+        bc_customs_df[u"包装种类"] = 2
+        bc_customs_df[u"原产国/地区"] = 303
+
+        bc_business_df = pd.DataFrame([], columns=bc_business_columns)
+        for business_column, bc_column in ((u"总毛重", u"毛重(公斤)"),
+                                           (u"总净重", u"净重(公斤)"),
+                                           (u"订单总金额", u"成交总价"),
+                                           (u"收件人姓名", u"收货人姓名"),
+                                           (u"收件人手机", u"收货人电话"),
+                                           (u"收件人身份证号", u"订购人身份证号"),
+                                           (u"收件人地址", u"收件地址"),
+                                           (u"商品序号", u"商品序号"),
+                                           (u"商品名称", u"商品名称"),
+                                           (u"单价", u"单价"),
+                                           (u"数量", u"数量"),
+                                           (u"总价", u"总价")):
+            bc_business_df[business_column] = bc_customs_df[bc_column]
+        for business_column, column in ((u"收货地址行政区划代码", u"货主单位地区代码"),
+                                        (u"单位", u"申报计量单位")):
+            bc_business_df[business_column] = customs_df[column]
+        bc_business_df[u"运杂费"] = 0
+        bc_business_df[u"非现金抵扣金额"] = 0
+        bc_business_df[u"代扣税款"] = 0
+        bc_business_df[u"件数"] = 1
+        bc_business_df[u"运费"] = 0
+        bc_business_df[u"商品批次号"] = 1
+        bc_business_df[u"原产国"] = 303
+
+        index_df = customs_df[[u"分运单号"]].copy()
+        index_df.rename(columns={u"分运单号": u'物流运单编号'}, inplace=True)
+        index_df.drop_duplicates(inplace=True)
+        index_df[u"序号"] = range(1, len(index_df.index) + 1)
+        bc_business_df[u"序号"] = pd.merge(bc_customs_df[[u'物流运单编号']], index_df, on=u'物流运单编号')[u"序号"]
+
+        #trim
+        del bc_customs_df[u"成交总价"]
 
         bc_customs_df.to_excel(os.path.join(
             output, u"%s申报单_%s.xlsx".encode('utf8') % (route_name, version)), index=False)
@@ -547,7 +623,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
             raise Exception, u"第%d行包含未上载订单号: %s" % (i + 1, order_number)
         if not order.used:
             raise Exception, u"第%d行包含未使用订单号: %s" % (i + 1, order_number)
-        if order.retraction:
+        if retraction is not None and order.retraction is not None:
             raise Exception, u"第%d行订单号已被提取: %s, 提取信息为: Uuid [%s], 时间 [%s]" % \
                              (i + 1, order_number, order.retraction.uuid,
                               time_to_filename(order.retraction.timestamp))
@@ -692,7 +768,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
             validate_route(customs_final_df)
 
             if 'save_customs_df' in route_config:
-                save_customs_df(route_config, version, customs_dfs, output)
+                save_customs_df(route_config, version, customs_final_df, output)
             else:
                 customs_final_df.to_excel(os.path.join(
                     output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
