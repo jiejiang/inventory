@@ -627,16 +627,26 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
         customs_dfs = data['customs_dfs']
 
         def validate_route(customs_df):
-            product_exclude = route_config['product_exclude'].strip() if 'product_exclude' in route_config else None
-            if product_exclude:
+            products_exclude = route_config['products_exclude'] if 'products_exclude' in route_config else []
+            if products_exclude:
+
                 if version == "v1":
                     product_col = u"主要商品"
+                    order_number_col = u"企业运单编号"
                 elif version == "v2":
                     product_col = u"货物名称"
+                    order_number_col = u'分运单号'
                 else:
                     raise Exception, "Version not supported too %s" % version
-                if customs_df[product_col].str.contains(product_exclude).any():
-                    raise Exception, u"包含违禁产品: %s" % product_exclude
+
+                for product_exclude in products_exclude:
+                    product_exclude = product_exclude.strip()
+                    if product_exclude:
+                        excluded = customs_df[product_col].str.contains(product_exclude)
+                        if excluded.any():
+                            order_numbers_excluded = customs_df[excluded][order_number_col].map(lambda x:str(x)).tolist()
+                            raise Exception, u"如下订单号包含违禁产品[%s]: %s" % \
+                                             (product_exclude, ", ".join(order_numbers_excluded))
 
         if version == "v1":
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
