@@ -334,7 +334,7 @@ class ProductInfo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False, index=True, unique=True)
     net_weight = db.Column(db.Float, nullable=False)
-    full_name = db.Column(db.String(128), nullable=True)
+    full_name = db.Column(db.String(128), nullable=False, unique=True, index=True)
     deprecated = db.Column(db.Boolean, default=False)
     count_infos = db.relationship("ProductCountInfo", backref='product_info', lazy='dynamic')
 
