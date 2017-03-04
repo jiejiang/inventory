@@ -128,17 +128,21 @@ class ProductCountInfoInlineModelForm(InlineFormAdmin):
 
 class ProductInfoAdmin(LoginRequiredModelView):
     #inline_models = [(ProductCountInfo, dict(form_columns=['count']))]
-    inline_models = (ProductCountInfoInlineModelForm(ProductCountInfo),)
+    #inline_models = (ProductCountInfoInlineModelForm(ProductCountInfo),)
     column_list = (
         'name', 'net_weight', 'gross_weight', 'unit_price', 'unit_per_item', 'tax_code', 'full_name', 'deprecated')
 
     column_labels = dict(name=u"商品名称", net_weight=u"每件净重(KG)", count_infos=u"箱件数 / 毛重  -- 已作废",
-                         price_per_kg=u"每千克价格(KG) -- 已作废", full_name=u"全称", deprecated=u"弃用",
+                         price_per_kg=u"每千克价格(KG) -- 已作废", full_name=u"全称(设置后无法修改)", deprecated=u"弃用",
                          unit_price=u"单价", gross_weight=u"每件毛重(KG)", tax_code=u"商品税号", billing_unit=u"计费单位",
-                         billing_unit_code=u"计费单位代码", unit_per_item=u"单个物品申报数量", specification=u"规格/型号")
+                         billing_unit_code=u"计费单位代码", unit_per_item=u"单个物品申报数量", specification=u"规格/型号",
+                         bc_product_code=u"BC商品编码", bc_specification=u"BC商品规格型号",
+                         bc_second_quantity=u"BC第二数量", bc_measurement_unit=u"BC计量单位",
+                         bc_second_measurement_unit=u"BC第二计量单位", )
     can_view_details = True
     column_default_sort = ('name', False)
     column_searchable_list = ('name', 'full_name')
+    form_excluded_columns = ('price_per_kg', 'count_infos')
 
     def _show_count_infos(view, context, model, name):
         return Markup(model.count_info_string)
@@ -149,6 +153,12 @@ class ProductInfoAdmin(LoginRequiredModelView):
 
     def on_model_change(self, form, model, is_created):
         model.name = "".join(model.name.strip().split())
+        if not is_created:
+            if form.full_name.object_data <> form.full_name.data:
+                model.full_name = form.full_name.object_data
+        else:
+            model.full_name = "".join(model.full_name.strip().split())
+
 
 class RetractionAdmin(LoginRequiredModelView):
     list_template = "admin/retraction/list.html"

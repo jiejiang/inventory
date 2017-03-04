@@ -180,12 +180,13 @@ def calculate_item_info_from_db_without_product_info(n_row, item_name, item_coun
     #     print c.key, getattr(product_info, c.key)
     if product_info.unit_price is None or product_info.gross_weight is None or product_info.unit_per_item is None \
             or product_info.tax_code is None or product_info.billing_unit is None \
-            or product_info.billing_unit_code is None or product_info.specification is None:
+            or product_info.billing_unit_code is None or product_info.specification is None \
+            or not product_info.full_name:
         raise Exception, u"第%d行商品 [%s] 注册信息不完整" % (n_row + 1, item_name)
 
     return product_info.unit_price * product_info.unit_per_item * item_count, product_info.net_weight * item_count, \
         product_info.gross_weight * item_count, product_info.unit_price, \
-        product_info.full_name if product_info.full_name else item_name, \
+        product_info.full_name, \
         product_info.net_weight, product_info.tax_code, product_info.billing_unit, product_info.billing_unit_code, \
         product_info.unit_per_item, product_info.specification
 
@@ -543,12 +544,41 @@ def save_customs_df(route_config, version, customs_df, output):
                                   (u'单价', u'申报单价'),
                                   (u'总价', u'成交总价')):
             bc_customs_df[bc_column] = customs_df[column]
+
+        #fill in bc product info
+        product_info_df = pd.read_sql_query(ProductInfo.query.filter(ProductInfo.full_name.in_(
+            tuple(set(customs_df[u'货物名称'].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
+        columns_to_delete = product_info_df.columns
+        product_info_df.rename(columns={'full_name': u'商品名称'}, inplace=True)
+        bc_customs_df = pd.merge(bc_customs_df, product_info_df, on=u'商品名称')
+        product_info_columns = ((u"商品编码", "bc_product_code"),
+                                (u"商品规格型号", "bc_specification"),
+                                (u"第二数量", "bc_second_quantity"),
+                                (u"计量单位", "bc_measurement_unit"),
+                                (u"第二计量单位", "bc_second_measurement_unit"))
+        for bc_column, column in product_info_columns:
+            bc_customs_df[bc_column] = bc_customs_df[column]
+        for column in columns_to_delete:
+            if column in bc_customs_df:
+                del bc_customs_df[column]
+        #check if any is empty
+        for bc_column, _ in product_info_columns:
+            null_valued = pd.isnull(bc_customs_df[bc_column])
+            if null_valued.any():
+                product_name_null_valued = bc_customs_df[null_valued][u'商品名称'].drop_duplicates()\
+                    .map(lambda x: str(x)).tolist()
+                raise Exception, u"如下商品的注册信息未包含必须字段[BC%s]: %s" % \
+                                 (bc_column, ", ".join(product_name_null_valued))
+
+        #calculate sum
         sum_df = customs_df[[u"分运单号", u'净重(KG)', u'毛重(KG)', u'成交总价']].groupby(u"分运单号").sum().reset_index()
         sum_df.rename(columns={u"分运单号": u'物流运单编号'}, inplace=True)
         bc_customs_df = pd.merge(bc_customs_df, sum_df, on=u'物流运单编号')
         for bc_column, column in ((u'净重(公斤)', u'净重(KG)'), (u'毛重(公斤)', u'毛重(KG)')):
             bc_customs_df[bc_column] = bc_customs_df[column]
             del bc_customs_df[column]
+
+        #fixed items
         bc_customs_df[u"电商平台代码"] = "1234567890"
         bc_customs_df[u"电商平台名称"] = u"淘宝科技有限公司"
         bc_customs_df[u"电商企业代码"] = "1122334455"
@@ -561,6 +591,7 @@ def save_customs_df(route_config, version, customs_df, output):
         bc_customs_df[u"原产国/地区"] = 303
 
         bc_business_df = pd.DataFrame([], columns=bc_business_columns)
+        #copy from bc
         for business_column, bc_column in ((u"总毛重", u"毛重(公斤)"),
                                            (u"总净重", u"净重(公斤)"),
                                            (u"订单总金额", u"成交总价"),
@@ -574,9 +605,12 @@ def save_customs_df(route_config, version, customs_df, output):
                                            (u"数量", u"数量"),
                                            (u"总价", u"总价")):
             bc_business_df[business_column] = bc_customs_df[bc_column]
+        #copy from original
         for business_column, column in ((u"收货地址行政区划代码", u"货主单位地区代码"),
                                         (u"单位", u"申报计量单位")):
             bc_business_df[business_column] = customs_df[column]
+
+        #fixed items
         bc_business_df[u"运杂费"] = 0
         bc_business_df[u"非现金抵扣金额"] = 0
         bc_business_df[u"代扣税款"] = 0
@@ -585,6 +619,7 @@ def save_customs_df(route_config, version, customs_df, output):
         bc_business_df[u"商品批次号"] = 1
         bc_business_df[u"原产国"] = 303
 
+        #index create
         index_df = customs_df[[u"分运单号"]].copy()
         index_df.rename(columns={u"分运单号": u'物流运单编号'}, inplace=True)
         index_df.drop_duplicates(inplace=True)

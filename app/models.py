@@ -347,6 +347,13 @@ class ProductInfo(db.Model):
     unit_per_item = db.Column(db.Float)
     specification = db.Column(db.String(64))
 
+    # bc attribute
+    bc_product_code = db.Column(db.String(64))
+    bc_specification = db.Column(db.String(64))
+    bc_second_quantity = db.Column(db.String(64))
+    bc_measurement_unit = db.Column(db.String(64))
+    bc_second_measurement_unit = db.Column(db.String(64))
+
     #deprecated
     price_per_kg = db.Column(db.Float)
 
