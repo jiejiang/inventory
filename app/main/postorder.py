@@ -625,8 +625,8 @@ def save_customs_df(route_config, version, customs_df, output):
         bc_business_df[u"原产国"] = 303
 
         #index create
-        index_df = customs_df[[u"分运单号"]].copy()
-        index_df.rename(columns={u"分运单号": u'物流运单编号'}, inplace=True)
+        print bc_customs_df[u"物流运单编号"]
+        index_df = bc_customs_df[[u"物流运单编号"]].copy()
         print index_df
         index_df.drop_duplicates(inplace=True)
         print index_df
