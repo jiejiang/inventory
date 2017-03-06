@@ -592,7 +592,7 @@ def save_customs_df(route_config, version, customs_df, output):
         bc_customs_df[u"原产国/地区"] = 303
 
         #sort
-        bc_customs_df.sort(["Sequence"], inplace=True)
+        bc_customs_df.sort_values(by="Sequence", inplace=True)
 
         bc_business_df = pd.DataFrame([], columns=bc_business_columns)
         #copy from bc
@@ -627,12 +627,14 @@ def save_customs_df(route_config, version, customs_df, output):
         #index create
         index_df = customs_df[[u"分运单号"]].copy()
         index_df.rename(columns={u"分运单号": u'物流运单编号'}, inplace=True)
+        print index_df
         index_df.drop_duplicates(inplace=True)
+        print index_df
         index_df[u"序号"] = range(1, len(index_df.index) + 1)
         bc_business_df[u"序号"] = pd.merge(bc_customs_df[[u'物流运单编号']], index_df, on=u'物流运单编号')[u"序号"]
 
         #sort
-        bc_business_df.sort(["Sequence"], inplace=True)
+        bc_business_df.sort_values(by="Sequence", inplace=True)
 
         #trim
         del bc_customs_df[u"成交总价"]
