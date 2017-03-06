@@ -542,7 +542,8 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
                                   (u'数量', u'件数'),
                                   (u'法定数量', u'申报数量'),
                                   (u'单价', u'申报单价'),
-                                  (u'总价', u'成交总价')):
+                                  (u'总价', u'成交总价'),
+                                  (u"单位", u"申报计量单位")):
             bc_customs_df[bc_column] = customs_df[column]
 
         #fill in bc product info
@@ -613,11 +614,9 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
                                            (u"单价", u"单价"),
                                            (u"数量", u"数量"),
                                            (u"总价", u"总价"),
-                                           (u"收货地址行政区划代码", u"邮编")):
+                                           (u"收货地址行政区划代码", u"邮编"),
+                                           (u"单位", u"单位")):
             bc_business_df[business_column] = bc_customs_df[bc_column]
-        #copy from original
-        for business_column, column in ((u"单位", u"申报计量单位"),):
-            bc_business_df[business_column] = customs_df[column]
 
         #fixed items
         bc_business_df[u"运杂费"] = 0
@@ -640,6 +639,7 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
         #trim
         del bc_customs_df[u"成交总价"]
         del bc_customs_df[u"邮编"]
+        del bc_customs_df[u"单位"]
 
         bc_customs_df.to_excel(os.path.join(
             output, u"%s申报单_%s.xlsx".encode('utf8') % (route_name, version)), index=False)
