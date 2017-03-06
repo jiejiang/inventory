@@ -511,7 +511,7 @@ def read_order_numbers(inxlsx):
     order_numbers = df[u"提取单号"]
     return order_numbers
 
-def save_customs_df(route_config, version, customs_df, output):
+def save_customs_df(route_config, version, customs_df, package_df, output):
     route_name = route_config['name']
     if version <> "v2":
         raise Exception, "Version not supported for save_customs_df: %s" % version
@@ -609,8 +609,7 @@ def save_customs_df(route_config, version, customs_df, output):
                                            (u"总价", u"总价")):
             bc_business_df[business_column] = bc_customs_df[bc_column]
         #copy from original
-        for business_column, column in ((u"收货地址行政区划代码", u"货主单位地区代码"),
-                                        (u"单位", u"申报计量单位")):
+        for business_column, column in ((u"单位", u"申报计量单位"),):
             bc_business_df[business_column] = customs_df[column]
 
         #fixed items
@@ -627,6 +626,10 @@ def save_customs_df(route_config, version, customs_df, output):
         index_df.drop_duplicates(inplace=True)
         index_df[u"序号"] = range(1, len(index_df.index) + 1)
         bc_business_df[u"序号"] = pd.merge(bc_customs_df[[u'物流运单编号']], index_df, on=u'物流运单编号')[u"序号"]
+
+        #post code
+        bc_business_df[u"收货地址行政区划代码"] = pd.merge(bc_customs_df[[u'物流运单编号']], package_df,
+                                                 left_on=u'物流运单编号', right_on=u"快件单号")[u"邮编"]
 
         #sort
         bc_business_df.sort_index(inplace=True)
@@ -781,7 +784,6 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
         if version == "v1":
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
-            customs_final_df.sort_index(inplace=True)
             customs_final_df[u'订单编号'] = None
             customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
 
@@ -794,7 +796,6 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
 
             package_final_df = pd.concat(package_dfs, ignore_index=True)
-            package_final_df.sort_index(inplace=True)
             package_final_df.index += 1
             package_final_df.to_excel(os.path.join(
                 output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
@@ -806,17 +807,18 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
         elif version == "v2":
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
             customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
+            package_final_df = pd.concat(package_dfs, ignore_index=True)
+            package_final_df.index += 1
 
             validate_route(customs_final_df)
 
             if 'save_customs_df' in route_config:
-                save_customs_df(route_config, version, customs_final_df, output)
+                save_customs_df(route_config, version, customs_final_df, package_final_df, output)
             else:
                 customs_final_df.to_excel(os.path.join(
                     output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
 
-            package_final_df = pd.concat(package_dfs, ignore_index=True)
-            package_final_df.index += 1
+
             package_final_df.to_excel(os.path.join(
                 output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
             receiver_columns = [u'收发件人证件号', u'收件人']
