@@ -612,7 +612,6 @@ def save_customs_df(route_config, version, customs_df, output):
         for business_column, column in ((u"收货地址行政区划代码", u"货主单位地区代码"),
                                         (u"单位", u"申报计量单位")):
             bc_business_df[business_column] = customs_df[column]
-        bc_business_df['Sequence'] = range(1, len(bc_business_df.index) + 1)
 
         #fixed items
         bc_business_df[u"运杂费"] = 0
@@ -782,6 +781,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
         if version == "v1":
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
+            customs_final_df.sort_index(inplace=True)
             customs_final_df[u'订单编号'] = None
             customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
 
@@ -794,6 +794,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
 
             package_final_df = pd.concat(package_dfs, ignore_index=True)
+            package_final_df.sort_index(inplace=True)
             package_final_df.index += 1
             package_final_df.to_excel(os.path.join(
                 output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
