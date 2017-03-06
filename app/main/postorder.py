@@ -544,6 +544,7 @@ def save_customs_df(route_config, version, customs_df, output):
                                   (u'单价', u'申报单价'),
                                   (u'总价', u'成交总价')):
             bc_customs_df[bc_column] = customs_df[column]
+        bc_customs_df['Sequence'] = range(1, len(bc_customs_df.index) + 1)
 
         #fill in bc product info
         product_info_df = pd.read_sql_query(ProductInfo.query.filter(ProductInfo.full_name.in_(
@@ -590,6 +591,9 @@ def save_customs_df(route_config, version, customs_df, output):
         bc_customs_df[u"包装种类"] = 2
         bc_customs_df[u"原产国/地区"] = 303
 
+        #sort
+        bc_customs_df.sort(["Sequence"], inplace=True)
+
         bc_business_df = pd.DataFrame([], columns=bc_business_columns)
         #copy from bc
         for business_column, bc_column in ((u"总毛重", u"毛重(公斤)"),
@@ -609,6 +613,7 @@ def save_customs_df(route_config, version, customs_df, output):
         for business_column, column in ((u"收货地址行政区划代码", u"货主单位地区代码"),
                                         (u"单位", u"申报计量单位")):
             bc_business_df[business_column] = customs_df[column]
+        bc_business_df['Sequence'] = range(1, len(bc_business_df.index) + 1)
 
         #fixed items
         bc_business_df[u"运杂费"] = 0
@@ -626,8 +631,13 @@ def save_customs_df(route_config, version, customs_df, output):
         index_df[u"序号"] = range(1, len(index_df.index) + 1)
         bc_business_df[u"序号"] = pd.merge(bc_customs_df[[u'物流运单编号']], index_df, on=u'物流运单编号')[u"序号"]
 
+        #sort
+        bc_business_df.sort(["Sequence"], inplace=True)
+
         #trim
         del bc_customs_df[u"成交总价"]
+        del bc_customs_df["Sequence"]
+        del bc_business_df["Sequence"]
 
         bc_customs_df.to_excel(os.path.join(
             output, u"%s申报单_%s.xlsx".encode('utf8') % (route_name, version)), index=False)
