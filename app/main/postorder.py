@@ -580,7 +580,7 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
 
         #post code
         post_code_df = package_df[[u"快件单号", u"邮编"]].copy()
-        sum_df.rename(columns={u"快件单号": u'物流运单编号'}, inplace=True)
+        post_code_df.rename(columns={u"快件单号": u'物流运单编号'}, inplace=True)
         bc_customs_df = pd.merge(bc_customs_df, post_code_df, on=u'物流运单编号')
 
         #fixed items
