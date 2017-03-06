@@ -578,6 +578,10 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
             bc_customs_df[bc_column] = bc_customs_df[column]
             del bc_customs_df[column]
 
+        #post code
+        post_code_df = package_df[[u"快件单号", u"邮编"]].copy()
+        bc_customs_df = pd.merge(bc_customs_df[[u'物流运单编号']], post_code_df, left_on=u'物流运单编号', right_on=u"快件单号")
+
         #fixed items
         bc_customs_df[u"电商平台代码"] = "1234567890"
         bc_customs_df[u"电商平台名称"] = u"淘宝科技有限公司"
@@ -606,7 +610,8 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
                                            (u"商品名称", u"商品名称"),
                                            (u"单价", u"单价"),
                                            (u"数量", u"数量"),
-                                           (u"总价", u"总价")):
+                                           (u"总价", u"总价"),
+                                           (u"收货地址行政区划代码", u"邮编")):
             bc_business_df[business_column] = bc_customs_df[bc_column]
         #copy from original
         for business_column, column in ((u"单位", u"申报计量单位"),):
@@ -627,15 +632,12 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
         index_df[u"序号"] = range(1, len(index_df.index) + 1)
         bc_business_df[u"序号"] = pd.merge(bc_customs_df[[u'物流运单编号']], index_df, on=u'物流运单编号')[u"序号"]
 
-        #post code
-        bc_business_df[u"收货地址行政区划代码"] = pd.merge(bc_customs_df[[u'物流运单编号']], package_df,
-                                                 left_on=u'物流运单编号', right_on=u"快件单号")[u"邮编"]
-
         #sort
         bc_business_df.sort_index(inplace=True)
 
         #trim
         del bc_customs_df[u"成交总价"]
+        del bc_customs_df[u"邮编"]
 
         bc_customs_df.to_excel(os.path.join(
             output, u"%s申报单_%s.xlsx".encode('utf8') % (route_name, version)), index=False)
