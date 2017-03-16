@@ -32,7 +32,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
     $scope.playAudio = function(sentence) {
         var audio = $scope.cache.get(sentence);
         if (! audio) {
-            audio = new Audio('/tts/' + sentence);
+            audio = new Audio('/' + $scope.route_prefix + '/tts/' + sentence);
             $scope.cache.put(sentence, audio);
         }
         audio.play();
@@ -53,6 +53,8 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
         $scope.initialize();
         $scope.route = "";
     }
+
+    $scope.submit_url = '/' + $scope.route_prefix + '/scan-export';
 
     $scope.onSubmit = function() {
         $scope.exportBarcodes = $scope.validScan.map(function(obj) {

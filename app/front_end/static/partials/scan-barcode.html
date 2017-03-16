@@ -34,7 +34,7 @@
     </div>
 
     <div class="col-lg-3 col-md-3" ng-show="validScan.length">
-        <form action="/scan-export" method="POST" target="_blank" ng-submit="onSubmit()">
+        <form action="{[submit_url]}" method="POST" target="_blank" ng-submit="onSubmit()">
             <input name="barcodes" value="" ng-model="exportBarcodes" style="display:none">
             <button class="btn btn-primary btn-block btn-lg"><i class="fa fa-file-excel-o fa-fw"></i>&nbsp; Export Scan</button>
         </form>
