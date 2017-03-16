@@ -79,7 +79,6 @@ def tts(sentence):
 @main.route("/scan-export", methods=['POST',])
 @login_required
 def scan_export():
-    print request.form
     if not 'barcodes' in request.form:
         abort(500)
     barcodes = request.form['barcodes'].split(",")
