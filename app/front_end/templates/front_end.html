@@ -124,11 +124,14 @@
 
     <script src="{{ url_for('bower.static', filename='angular-bootstrap/ui-bootstrap-tpls.min.js') }}"></script>
 
+
+
     {% assets filters="jsmin", output="gen/postorders_front_end.js",
         "front_end/js/main.js", "front_end/js/controllers/frame.js",
         "front_end/js/controllers/batch-order.js", "front_end/js/factories/batch-order.js",
         "front_end/js/controllers/new-order-numbers.js", "front_end/js/controllers/retract-orders.js",
-        "front_end/js/controllers/scan-barcode.js" %}
+        "front_end/js/controllers/scan-barcode.js", "front_end/js/factories/scan-order.js",
+        "front_end/js/factories/route-info.js" %}
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
 

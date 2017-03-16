@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import not_
-
 __author__ = 'jie'
 
 import sys
-
+from sqlalchemy import not_
+from werkzeug.utils import secure_filename
 import os, datetime, zipfile
-from flask import request, current_app, Response
+from flask import request, current_app, Response, send_from_directory
 from flask_restful import Resource, fields, marshal_with, marshal
 from flask_restful import abort, reqparse
 from redis import ConnectionError
@@ -17,7 +16,7 @@ from . import api
 from .. import db
 from ..models import Job, Order, Retraction
 from ..util import time_to_filename
-from ..main.postorder import read_order_numbers, retract_from_order_numbers
+from ..main.postorder import read_order_numbers, retract_from_order_numbers, load_order_info
 from auth import http_basic_auth, login_required
 
 STREAM_BUF_SIZE = 2048
@@ -287,6 +286,26 @@ class OrderAPI(Resource):
 
 api.add_resource(OrderAPI, '/order')
 
+class RouteInfoAPI(Resource):
+    method_decorators = [login_required, ]
+
+    fields = {
+        'name': fields.String,
+        'max_order_number_per_receiver': fields.String(),
+        }
+
+    @marshal_with(fields)
+    def get(self, route):
+        if not route in current_app.config['ROUTE_CONFIG']:
+            abort(500, message="Route Not Exist")
+        return current_app.config['ROUTE_CONFIG'][route], 200, {
+            'Last-Modified': datetime.datetime.now(),
+            'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
+            'Pragma': 'no-cache', 'Expires': -1}
+
+
+api.add_resource(RouteInfoAPI, '/route-info/<route>')
+
 order_info_parser = reqparse.RequestParser()
 order_info_parser.add_argument('route', type=str, help="Route", required=True)
 
@@ -303,13 +322,19 @@ class OrderInfoAPI(Resource):
             route_config = current_app.config['ROUTE_CONFIG'][route]
             order = Order.query.filter(Order.order_number==order_number).first()
             if not order:
-                raise Exception, "Error: Not Found"
+                raise Exception, "Error: Barcode Not Found"
             if not order.job_id:
-                raise Exception, "Error: Not Used"
+                raise Exception, "Error: Barcode Not Used"
             if order.retraction_id:
-                raise Exception, "Error: Scanned"
-            
-
+                raise Exception, "Error: Barcode Already Scanned"
+            order_df = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
+            pieces = order_df[u"件数"].sum()
+            info['detail'] = "/".join(
+                map(lambda x:"%s(%s)" % (x[0], x[1]),
+                    zip(order_df[u"货物名称"].map(lambda x:str(x)).tolist(),
+                        order_df[u"件数"].map(lambda x:str(x)).tolist())))
+            info['message'] = "%d Pieces, OK" % pieces
+            info['receiver_name'] = order.receiver_name
             info['receiver_id_number'] = order.receiver_id_number
             info['success'] = True
         except Exception, inst:
@@ -319,6 +344,5 @@ class OrderInfoAPI(Resource):
             'Last-Modified': datetime.datetime.now(),
             'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
             'Pragma': 'no-cache', 'Expires': -1}
-
 
 api.add_resource(OrderInfoAPI, '/scan-order/<order_number>')

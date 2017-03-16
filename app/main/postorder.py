@@ -842,6 +842,42 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
         else:
             raise Exception, "Version not supported too %s" % version
 
+def load_order_info(download_folder, order, route_config):
+    version = order.job.version if order.job.version else "v1"
+    if version <> "v2":
+        raise Exception, "Error: Version"
+    product_col = u"货物名称"
+    uuid = str(order.job.uuid)
+    job_file = os.path.join(download_folder, uuid, uuid + '.zip')
+    if not os.path.exists(job_file):
+        raise Exception, "Error: Missing File"
+    with zipfile.ZipFile(job_file) as z:
+        customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
+            u"分运单号": lambda x: str(x),
+            u"商品编码": lambda x: str(x),
+            u'申报计量单位': lambda x: str(x),
+            u'货主单位代码': lambda x: str(x),
+            u"电话号码(固话)": lambda x: str(x),
+            u"货主单位地区代码": lambda x: str(x),
+            u"收发件人证件号": lambda x: str(x),
+            u"贸易国别": lambda x: str(x),
+            u"产销国": lambda x: str(x),
+            u"发件人国别": lambda x: str(x),
+        })
+        sub_customs_df = customs_df[customs_df[u"分运单号"] == order.order_number]
+        if len(sub_customs_df.index) <= 0:
+            raise Exception, "Error: Empty Record"
+
+        products_exclude = route_config['products_exclude'] if 'products_exclude' in route_config else []
+        if products_exclude:
+            for product_exclude in products_exclude:
+                product_exclude = product_exclude.strip()
+                if product_exclude:
+                    excluded = customs_df[product_col].str.contains(product_exclude)
+                    if excluded.any():
+                        raise Exception, "Error: Product Excluded"
+    return sub_customs_df
+
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-i", "--input", dest="input",

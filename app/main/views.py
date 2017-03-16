@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 __author__ = 'jie'
 
-import os
-from flask import redirect, url_for, current_app, abort, Response
+import os, datetime
+import pandas as pd
+from cStringIO import StringIO
+from werkzeug.utils import secure_filename
+from flask import redirect, url_for, current_app, abort, Response, send_from_directory, request
 from . import main
 from ..models import Job, Retraction
 from ..util import time_to_filename
@@ -57,3 +60,35 @@ def download_retraction_file(retraction_id):
                                             (u"提取_".encode('utf8') + time_to_filename(retraction.timestamp))})
 
     return response
+
+@main.route("/tts/<sentence>", methods=['GET',])
+@login_required
+def tts(sentence):
+    filename = secure_filename(sentence) + '.wav'
+    tts_folder = current_app.config["TTS_FOLDER"]
+    filepath = os.path.join(tts_folder, filename)
+    if not os.path.exists(tts_folder):
+        os.makedirs(tts_folder)
+    if not os.path.exists(filepath):
+        os.system("""pico2wave -w "%s" -l en-GB "%s" """ % (filepath, sentence))
+    if not os.path.exists(filepath):
+        abort(500, message="Failed to TTS")
+    return send_from_directory(os.path.abspath(tts_folder), filename, as_attachment=True, mimetype='application/octet-stream')
+
+
+@main.route("/scan-export", methods=['POST',])
+@login_required
+def scan_export():
+    print request.form
+    if not 'barcodes' in request.form:
+        abort(500)
+    barcodes = request.form['barcodes'].split(",")
+    df = pd.DataFrame({u"提取单号": barcodes})
+    xlsx_file = StringIO()
+    writer = pd.ExcelWriter(xlsx_file, engine='xlsxwriter')
+    df.to_excel(writer, index=None)
+    writer.save()
+    xlsx_file.seek(0)
+    return Response(xlsx_file, mimetype='application/octet-stream',
+            headers={"Content-Disposition": "attachment;filename=%s" %
+                                            "scan_%s.xlsx" % datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")})

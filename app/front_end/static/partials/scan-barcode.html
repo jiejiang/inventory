@@ -13,12 +13,12 @@
 
     <div class="col-lg-3 col-md-3">
         <div class="input-group top-mini-buffer">
-            <span class="input-group-addon" popover-trigger="mouseenter" popover-placement="bottom" popover="线路选择">
+            <span class="input-group-addon" popover-trigger="mouseenter" popover-placement="bottom" popover="Route Choice">
                 <i class="fa fa-truck fa-fw"></i></span>
             <select class="form-control" ng-model="route" ng-change="onSelectRoute()">
                 <option value="">--------</option>
-                <option value="bc">BC线(限3包)</option>
-                <option value="cc">CC线(限1包,无1段)</option>
+                <option value="bc">BC Route (3 Packages/Person Max)</option>
+                <option value="cc">CC Route (1 Package/Person Max, No First Milk)</option>
             </select>
         </div>
     </div>
@@ -32,28 +32,47 @@
                  ng-focus="scan_mode=true" ng-blur="scan_mode=false" ng-init="scan_mode=false">
         </div>
     </div>
+
+    <div class="col-lg-3 col-md-3" ng-show="validScan.length">
+        <form action="/scan-export" method="POST" target="_blank" ng-submit="onSubmit()">
+            <input name="barcodes" value="" ng-model="exportBarcodes" style="display:none">
+            <button class="btn btn-primary btn-block btn-lg"><i class="fa fa-file-excel-o fa-fw"></i>&nbsp; Export Scan</button>
+        </form>
+    </div>
+
+    <div class="col-lg-3 col-md-3" ng-show="validScan.length || invalidScan.length">
+        <a ng-click="onReset()" class="btn btn-warning btn-block btn-lg"><i class="fa fa-trash-o fa-fw"></i>&nbsp; Reset</a>
+    </div>
 </div>
 
 <hr/>
 
 <div class="row" ng-show="route">
-    <div class="col-lg-6">
+    <div class="col-lg-8">
         <div class="panel panel-success">
             <div class="panel-heading">
-                Valid Scan
+                Accepted Scan
             </div>
             <div class="panel-body" ng-show="validScan.length">
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>No.</th>
                                 <th>Barcode</th>
+                                <th>Receiver Name</th>
+                                <th>Receiver ID</th>
+                                <th>Detail</th>
                                 <th>Prompt</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="success" ng-repeat="scan in validScan">
+                            <tr class="success" ng-repeat="scan in validScan | orderBy:'-' track by $index" ng-class="getAcceptClass($index)">
+                                <td>{[validScan.length - $index]}</td>
                                 <td>{[scan.barcode]}</td>
+                                <td>{[barcodeStorage[scan.barcode].receiver_name]}</td>
+                                <td>{[barcodeStorage[scan.barcode].receiver_id_number]}</td>
+                                <td>{[barcodeStorage[scan.barcode].detail]}</td>
                                 <td>{[scan.prompt]}</td>
                             </tr>
                         </tbody>
@@ -63,10 +82,10 @@
         </div>
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <div class="panel panel-danger">
             <div class="panel-heading">
-                Invalid Scan
+                Rejected Scan
             </div>
             <div class="panel-body" ng-show="invalidScan.length">
                 <div class="table-responsive">
@@ -78,7 +97,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="danger" ng-repeat="scan in invalidScan">
+                            <tr class="danger" ng-repeat="scan in invalidScan | orderBy:'-'" ng-class="getRejectClass($index)">
                                 <td>{[scan.barcode]}</td>
                                 <td>{[scan.prompt]}</td>
                             </tr>
@@ -89,6 +108,3 @@
         </div>
     </div>
 </div>
-
-{[scan_mode]}
-{[barcodeStorage]}
