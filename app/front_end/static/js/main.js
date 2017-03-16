@@ -27,6 +27,10 @@ window.postOrdersApp = angular.module('postOrdersApp',
         templateUrl: partialsDir + 'new-order-numbers.html',
         controller: 'NewOrderNumbers'
     })
+    .when('/scan-barcode', {
+        templateUrl: partialsDir + 'scan-barcode.html',
+        controller: 'ScanBarcode'
+    })
     .otherwise({redirectTo: '/batch-order'});
 }]);
 

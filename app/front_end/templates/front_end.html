@@ -41,13 +41,13 @@
                         <a href="#/retract-orders" ng-class="{active: isActive('/retract-orders')}"><i class="fa fa-check-square-o"></i> 提取订单</a>
                     </li>
 
-                    <li></li>
-
                     <li>
                         <a href="#/new-order-numbers" ng-class="{active: isActive('/new-order-numbers')}"><i class="fa fa-upload"></i> 补充订单号</a>
                     </li>
 
-                    <li></li>
+                    <li>
+                        <a href="#/scan-barcode" ng-class="{active: isActive('/scan-barcode')}"><i class="fa fa-barcode"></i> Scan Barcode</a>
+                    </li>
 
                     <li>
                         <a href="/{[route_prefix]}/admin/admin.success_jobs"><i class="fa fa-clock-o"></i> 历史生成订单下载</a>
@@ -127,7 +127,8 @@
     {% assets filters="jsmin", output="gen/postorders_front_end.js",
         "front_end/js/main.js", "front_end/js/controllers/frame.js",
         "front_end/js/controllers/batch-order.js", "front_end/js/factories/batch-order.js",
-        "front_end/js/controllers/new-order-numbers.js", "front_end/js/controllers/retract-orders.js" %}
+        "front_end/js/controllers/new-order-numbers.js", "front_end/js/controllers/retract-orders.js",
+        "front_end/js/controllers/scan-barcode.js" %}
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
 

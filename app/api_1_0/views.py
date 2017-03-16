@@ -7,7 +7,7 @@ import sys
 
 import os, datetime, zipfile
 from flask import request, current_app, Response
-from flask_restful import Resource, fields, marshal_with
+from flask_restful import Resource, fields, marshal_with, marshal
 from flask_restful import abort, reqparse
 from redis import ConnectionError
 from sqlalchemy.orm import exc
@@ -286,3 +286,39 @@ class OrderAPI(Resource):
         return Order.query.filter(or_(*or_filters)).filter(Order.used_time >= start_day).order_by(desc(Order.used_time)).all()
 
 api.add_resource(OrderAPI, '/order')
+
+order_info_parser = reqparse.RequestParser()
+order_info_parser.add_argument('route', type=str, help="Route", required=True)
+
+class OrderInfoAPI(Resource):
+    method_decorators = [login_required, ]
+
+    def get(self, order_number):
+        info = {}
+        try:
+            args = order_info_parser.parse_args()
+            route = args['route']
+            if not route in current_app.config['ROUTE_CONFIG']:
+                raise Exception, "Error: Route"
+            route_config = current_app.config['ROUTE_CONFIG'][route]
+            order = Order.query.filter(Order.order_number==order_number).first()
+            if not order:
+                raise Exception, "Error: Not Found"
+            if not order.job_id:
+                raise Exception, "Error: Not Used"
+            if order.retraction_id:
+                raise Exception, "Error: Scanned"
+            
+
+            info['receiver_id_number'] = order.receiver_id_number
+            info['success'] = True
+        except Exception, inst:
+            info['success'] = False
+            info['message'] = inst.message
+        return info, 200, {
+            'Last-Modified': datetime.datetime.now(),
+            'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
+            'Pragma': 'no-cache', 'Expires': -1}
+
+
+api.add_resource(OrderInfoAPI, '/scan-order/<order_number>')

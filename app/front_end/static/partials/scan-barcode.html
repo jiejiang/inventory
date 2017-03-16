@@ -1,0 +1,94 @@
+<div id="non-scan" ng-show="scan_mode==false">
+    <h1 class="text-danger text-center"><i class="fa fa-ban fa-spin"></i>
+        WARNING: NOT IN SCAN MODE <i class="fa fa-ban fa-spin"></i></h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">Scan Barcode</h1>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="col-lg-3 col-md-3">
+        <div class="input-group top-mini-buffer">
+            <span class="input-group-addon" popover-trigger="mouseenter" popover-placement="bottom" popover="线路选择">
+                <i class="fa fa-truck fa-fw"></i></span>
+            <select class="form-control" ng-model="route" ng-change="onSelectRoute()">
+                <option value="">--------</option>
+                <option value="bc">BC线(限3包)</option>
+                <option value="cc">CC线(限1包,无1段)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-3" ng-show="route">
+
+        <div class="input-group top-mini-buffer">
+          <span class="input-group-addon" id="basic-addon1"><i class="fa fa-barcode"></i> </span>
+          <input type="text" class="form-control" placeholder="Click here and start scan"
+                 aria-describedby="basic-addon1" ng-keypress="barcodeKeyPressed($event)" ng-model="barcode"
+                 ng-focus="scan_mode=true" ng-blur="scan_mode=false" ng-init="scan_mode=false">
+        </div>
+    </div>
+</div>
+
+<hr/>
+
+<div class="row" ng-show="route">
+    <div class="col-lg-6">
+        <div class="panel panel-success">
+            <div class="panel-heading">
+                Valid Scan
+            </div>
+            <div class="panel-body" ng-show="validScan.length">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Prompt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="success" ng-repeat="scan in validScan">
+                                <td>{[scan.barcode]}</td>
+                                <td>{[scan.prompt]}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="panel panel-danger">
+            <div class="panel-heading">
+                Invalid Scan
+            </div>
+            <div class="panel-body" ng-show="invalidScan.length">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Prompt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="danger" ng-repeat="scan in invalidScan">
+                                <td>{[scan.barcode]}</td>
+                                <td>{[scan.prompt]}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{[scan_mode]}
+{[barcodeStorage]}

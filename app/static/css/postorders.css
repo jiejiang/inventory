@@ -88,3 +88,11 @@ td .progress {
 .dataTables_length {
     float:right !important;
 }
+
+#non-scan{
+    width:80%;
+    height:80px;
+    position:fixed;
+    z-index:9999;
+    background:rgba(0,0,0,0.2)
+}
