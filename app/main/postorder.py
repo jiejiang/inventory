@@ -873,7 +873,7 @@ def load_order_info(download_folder, order, route_config):
             for product_exclude in products_exclude:
                 product_exclude = product_exclude.strip()
                 if product_exclude:
-                    excluded = customs_df[product_col].str.contains(product_exclude)
+                    excluded = sub_customs_df[product_col].str.contains(product_exclude)
                     if excluded.any():
                         raise Exception, "Error: Product Excluded"
     return sub_customs_df
