@@ -8,6 +8,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
         $scope.invalidScan = [];
         $scope.barcodeStorage = new Object();
         $scope.receiverCount = new Object();
+        $scope.exportBarcodes = "";
     };
 
     $scope.initialize();
@@ -43,16 +44,16 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
             return "animated infinite flash";
         }
         return ""
-    }
+    };
 
     function getInactiveClass(index) {
         return ""
-    }
+    };
 
     $scope.onReset = function() {
         $scope.initialize();
         $scope.route = "";
-    }
+    };
 
     $scope.submit_url = '/' + $scope.route_prefix + '/scan-export';
 
@@ -64,7 +65,6 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
         $http.post('/scan-export', {barcodes: $scope.validScan.map(function(obj) {
             return obj.barcode;
         })}, {}).then(function(response) {
-            console.log(response);
             var hiddenElement = document.createElement('a');
             hiddenElement.href = 'data:attachment/csv,' + encodeURI(response.data);
             hiddenElement.target = '_blank';
@@ -78,7 +78,20 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
             $scope.getRejectClass = getInactiveClass;
         });
         */
-    }
+    };
+
+    $scope.removeValidScan = function(index){
+        var barcode = $scope.validScan[index].barcode;
+        var id_number = $scope.barcodeStorage[barcode].receiver_id_number;
+        if ($scope.receiverCount[id_number] > 0) {
+            $scope.receiverCount[id_number] -= 1;
+        }
+        delete $scope.barcodeStorage[barcode];
+        if (index === $scope.validScan.length - 1) {
+            $scope.getAcceptClass = getInactiveClass;
+        }
+        $scope.validScan.splice(index, 1);
+    };
 
     $scope.onScan = function(barcode) {
         if ($scope.barcodeStorage.hasOwnProperty(barcode)) {
@@ -138,7 +151,6 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
         if (keyCode == 13 && $scope.barcode) {
             var barcode = $scope.barcode;
             $scope.barcode = '';
-            $log.log(barcode);
             $scope.onScan(barcode);
         }
     };

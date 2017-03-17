@@ -64,6 +64,7 @@
                                 <th>Receiver ID</th>
                                 <th>Detail</th>
                                 <th>Prompt</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -74,6 +75,7 @@
                                 <td>{[barcodeStorage[scan.barcode].receiver_id_number]}</td>
                                 <td>{[barcodeStorage[scan.barcode].detail]}</td>
                                 <td>{[scan.prompt]}</td>
+                                <td><a class="btn btn-warning btn-xs" ng-click="removeValidScan(validScan.length - $index - 1)"><i class="fa fa-trash-o"></i></a></td>
                             </tr>
                         </tbody>
                     </table>
@@ -117,3 +119,4 @@
             <i class="fa fa-volume-up fa-fw"></i>&nbsp; Test Speaker Volume</a>
     </div>
 </div>
+
