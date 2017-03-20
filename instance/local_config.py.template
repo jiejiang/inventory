@@ -21,3 +21,24 @@ USER_ENABLE_CHANGE_USERNAME = False
 USER_ENABLE_REGISTRATION = False
 USER_ENABLE_FORGOT_PASSWORD = False
 USER_APP_NAME = "Yunda"
+
+ALERT_THRESHOLDS = [1000, 500, 300, 200, 100]
+
+ROUTE_CONFIG = {
+    'bc': {
+        'name': u'BC线',
+        'max_order_number_per_receiver': 3,
+        'save_customs_df': 'bc',
+    },
+    'cc': {
+        'name': u'CC线',
+        'max_order_number_per_receiver': 1,
+        'products_exclude': [u"1段",]
+    }
+}
+
+TTS_FOLDER = 'tts'
+
+YUANTONG_ORDER_URL = "http://58.32.246.71:8000/CommonOrderModeBPlusServlet.action"
+YUANTONG_ACCOUNT = "K57100732"
+YUANTONG_SECRET = "6owY3zeG"
