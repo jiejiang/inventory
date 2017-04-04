@@ -267,7 +267,7 @@ def fetch_ticket_number(n_row, receiver_city):
     return u"国际件", order, province_name, municipal_name, address_header
 
 
-def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, dry_run=False):
+def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     p_data = []
     c_data = []
     sender_name = in_row[u'发件人名字']
@@ -296,22 +296,6 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, dry_run=False):
         raise Exception, u"第%d行包裹数量异常" % n_row
     if not isinstance(receiver_city, basestring) or not receiver_city.strip():
         raise Exception, u"第%d行收件人城市名异常" % n_row
-
-    if dry_run:
-        for i in xrange(n_package):
-            suffix = "" if i == 0 else ".%d" % i
-            item_name = in_row[u'申报物品%d(英文）' % (i + 1)]
-            item_count = in_row[u'数量%s' % suffix]
-            unit_price = in_row[u'物品单价（英镑）%s' % suffix]
-
-            if item_name is None or pd.isnull(item_name):
-                raise Exception, u"第%d行第%d个商品名称为空" % (n_row, i + 1)
-            item_name = str(item_name).strip()
-
-            sub_total_price, net_weight, gross_weight, unit_price, item_full_name, net_weight_per_item, tax_code, \
-            billing_unit, billing_unit_code, unit_per_item, specification \
-                = calculate_item_info_from_db_without_product_info(n_row, item_name, item_count)
-        return
 
     package_type, order, receiver_province, receiver_municipal, receiver_address_header = \
         fetch_ticket_number(n_row, receiver_city)
@@ -472,14 +456,10 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
     if not os.path.exists(barcode_dir):
         os.makedirs(barcode_dir)
 
-    #dry_run
-    for index, in_row in in_df.iterrows():
-        ticket_number, p_data, c_data = process_row(index, in_row, barcode_dir, tmpdir, job, dry_run=True)
-        print >> sys.stderr, "End Dry Run"
-
     ticket_numbers = []
     for index, in_row in in_df.iterrows():
-        ticket_number, p_data, c_data = process_row(index, in_row, barcode_dir, tmpdir, job)
+        ticket_number, p_data, c_data = process_row(
+            index, in_row, barcode_dir, tmpdir, job)
         ticket_numbers.append(ticket_number)
         package_data.append(p_data)
         customs_data.append(c_data)
