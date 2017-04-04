@@ -3183,7 +3183,7 @@ INSERT INTO `db_yhm_city` VALUES (3171,376,'开远市',3);
 INSERT INTO `db_yhm_city` VALUES (3172,376,'绿春县',3);
 INSERT INTO `db_yhm_city` VALUES (3173,376,'建水县',3);
 INSERT INTO `db_yhm_city` VALUES (3174,376,'石屏县',3);
-INSERT INTO `db_yhm_city` VALUES (3175,376,'弥勒县',3);
+INSERT INTO `db_yhm_city` VALUES (3175,376,'弥勒市',3);
 INSERT INTO `db_yhm_city` VALUES (3176,376,'元阳县',3);
 INSERT INTO `db_yhm_city` VALUES (3177,376,'红河县',3);
 INSERT INTO `db_yhm_city` VALUES (3178,376,'金平',3);
