@@ -346,3 +346,22 @@ class OrderInfoAPI(Resource):
             'Pragma': 'no-cache', 'Expires': -1}
 
 api.add_resource(OrderInfoAPI, '/scan-order/<order_number>')
+
+
+class OrderStatusAPI(Resource):
+    fields = {
+        'orderNumber': fields.String(attribute='order_number'),
+        'usedTime': fields.DateTime(dt_format='iso8601', attribute='used_time'),
+        'retractionTime': fields.DateTime(dt_format='iso8601', attribute='retraction.timestamp')
+    }
+
+    @marshal_with(fields)
+    def get(self, order_number):
+        http_basic_auth(request.authorization)
+        order = Order.query.filter_by(order_number=order_number).first()
+        if order and order.used:
+            return order
+        else:
+            abort(404)
+
+api.add_resource(OrderStatusAPI, '/order/<order_number>')
