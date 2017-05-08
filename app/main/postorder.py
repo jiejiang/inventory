@@ -286,16 +286,22 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     id_number = in_row[u'身份证号(EMS需要)']
 
     for check_field in (sender_name, sender_phone, sender_address, receiver_name, receiver_mobile, receiver_address,
-                        receiver_city, receiver_post_code, n_package, id_number):
-        if pd.isnull(check_field):
+                        receiver_city, receiver_post_code, id_number):
+        if pd.isnull(check_field) or not isinstance(check_field, basestring) or not check_field.strip():
             raise Exception, u"第%d行数据不完整,请更正" % n_row
 
-    if not isinstance(sender_name, basestring) or not isinstance(sender_address, basestring):
-        raise Exception, u"第%d行发件人信息异常" % n_row
-    if not isinstance(n_package, int):
+    if pd.isnull(n_package) or not isinstance(n_package, int) or n_package < 1:
         raise Exception, u"第%d行包裹数量异常" % n_row
-    if not isinstance(receiver_city, basestring) or not receiver_city.strip():
-        raise Exception, u"第%d行收件人城市名异常" % n_row
+
+    sender_name = sender_name.strip()
+    sender_address = sender_address.strip()
+    sender_phone = sender_phone.strip()
+    receiver_name = receiver_name.strip()
+    receiver_mobile = receiver_mobile.strip()
+    receiver_address = receiver_address.strip()
+    receiver_city = receiver_city.strip()
+    receiver_post_code = receiver_post_code.strip()
+    id_number = id_number.strip()
 
     package_type, order, receiver_province, receiver_municipal, receiver_address_header = \
         fetch_ticket_number(n_row, receiver_city)
@@ -312,9 +318,9 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
         (sender_name, sender_address, sender_phone))
     order.receiver_address = ", ".join(
         (receiver_address, receiver_city, receiver_post_code))
-    order.receiver_mobile = receiver_mobile.strip()
-    order.receiver_id_number = id_number.strip()
-    order.receiver_name = receiver_name.strip()
+    order.receiver_mobile = receiver_mobile
+    order.receiver_id_number = id_number
+    order.receiver_name = receiver_name
     if job:
         order.job = job
         job.version = "v2"
