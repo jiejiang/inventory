@@ -22,6 +22,8 @@ from weasyprint import HTML, CSS
 from wand.image import Image
 from PyPDF2 import PdfFileMerger, PdfFileReader
 from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
+from openpyxl import load_workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 from ..models import City, Order, ProductInfo
 from .. import db
@@ -64,6 +66,8 @@ PROVINCE_INFO_MAP = {
     u"西藏": {'ticket_initial': 1, 'package_type': u"标准快递"},
     u"新疆": {'ticket_initial': 1, 'package_type': u"标准快递"},
 }
+
+PROVINCE_NAMES = [City.normalize_province(name) for name in PROVINCE_INFO_MAP.keys()]
 
 ITEM_NAME_RE = re.compile(
     ur"^.*?((([123一二三])|([4四]))段|(\d+)g)$", flags=re.U | re.I)
@@ -293,15 +297,15 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     if pd.isnull(n_package) or not isinstance(n_package, int) or n_package < 1:
         raise Exception, u"第%d行包裹数量异常" % n_row
 
-    sender_name = sender_name.strip()
-    sender_address = sender_address.strip()
-    sender_phone = sender_phone.strip()
-    receiver_name = receiver_name.strip()
-    receiver_mobile = receiver_mobile.strip()
-    receiver_address = receiver_address.strip()
-    receiver_city = receiver_city.strip()
-    receiver_post_code = receiver_post_code.strip()
-    id_number = id_number.strip()
+    sender_name = "".join(sender_name.split())
+    sender_address = "".join(sender_address.split())
+    sender_phone = "".join(sender_phone.split())
+    receiver_name = "".join(receiver_name.split())
+    receiver_mobile = "".join(receiver_mobile.split())
+    receiver_address = "".join(receiver_address.split())
+    receiver_city = "".join(receiver_city.split())
+    receiver_post_code = "".join(receiver_post_code.split())
+    id_number = "".join(id_number.split())
 
     package_type, order, receiver_province, receiver_municipal, receiver_address_header = \
         fetch_ticket_number(n_row, receiver_city)
@@ -536,7 +540,7 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
         bc_business_columns = [u'序号', u'订单号', u'订单编号', u'支付号', u'运杂费', u'非现金抵扣金额', u'代扣税款',
                                u'件数', u'总毛重', u'总净重', u'订单总金额', u'运费', u'收件人姓名', u'收件人手机',
                                u'收件人身份证号', u'收件人地址', u'收货地址行政区划代码', u'商品批次号', u'商品序号',
-                               u'单位', u'原产国', u'商品名称', u'单价', u'数量', u'总价']
+                               u'单位', u'原产国', u'企业商品货号', u'商品名称', u'单价', u'数量', u'总价']
 
         bc_customs_df = pd.DataFrame([], columns=bc_customs_columns)
         for bc_column, column in ((u'物流运单编号', u'分运单号'),
@@ -603,10 +607,10 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
         bc_customs_df[u"序号"] = pd.merge(bc_customs_df[[u'物流运单编号']], index_df, on=u'物流运单编号')[u"序号"]
 
         #fixed items
-        bc_customs_df[u"电商平台代码"] = "1234567890"
-        bc_customs_df[u"电商平台名称"] = u"淘宝科技有限公司"
-        bc_customs_df[u"电商企业代码"] = "1122334455"
-        bc_customs_df[u"电商企业名称"] = "鹤山XX电子商务有限公司"
+        bc_customs_df[u"电商平台代码"] = "3728960D7A" #updated on 10/5/2017
+        bc_customs_df[u"电商平台名称"] = u"青岛创客岛科技有限公司" #updated on 10/5/2017
+        bc_customs_df[u"电商企业代码"] = "3728960D7A" #updated on 10/5/2017
+        bc_customs_df[u"电商企业名称"] = "青岛创客岛科技有限公司" #updated on 10/5/2017
         bc_customs_df[u"贸易方式"] = "9610"
         bc_customs_df[u"起运国/地区"] = 303
         bc_customs_df[u"运费"] = 0
@@ -631,7 +635,7 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
                                            (u"单价", u"单价"),
                                            (u"数量", u"数量"),
                                            (u"总价", u"总价"),
-                                           (u"收货地址行政区划代码", u"邮编"),
+                                           #(u"收货地址行政区划代码", u"邮编"), #leave empty on 10/5/2017
                                            (u"单位", u"单位"),
                                            (u"序号", u"序号"),
                                            ("Sequence", "Sequence")):
@@ -645,6 +649,7 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
         bc_business_df[u"运费"] = 0
         bc_business_df[u"商品批次号"] = 1
         bc_business_df[u"原产国"] = 303
+        bc_business_df[u"企业商品货号"] = "HQJ0000000000004" #updated on 10/5/2017
 
         #sort
         bc_business_df.sort_values(by=[u"序号", u'商品序号'], inplace=True)
@@ -656,6 +661,14 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
         del bc_customs_df[u"序号"]
         del bc_customs_df["Sequence"]
         del bc_business_df["Sequence"]
+
+        #bussiness duplicate removal on 10/5/2017
+        def bc_business_column_filter(row):
+            if row[u"商品序号"] > 1:
+                for i in range(17):
+                    row[i] = ""
+            return row
+        bc_business_df = bc_business_df.apply(bc_business_column_filter, axis=1)
 
         bc_customs_df.to_excel(os.path.join(
             output, u"%s申报单_%s.xlsx".encode('utf8') % (route_name, version)), index=False)
@@ -832,12 +845,40 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
             validate_route(customs_final_df)
 
+            #global changes
+            customs_final_df[u'随附单证类型'] = 1 #default value on 10/5/2017
+
+            #limit the address size on 10/5/2017
+            address_limit = 24
+            def address_trim(address):
+                if len(address) > address_limit:
+                    found = False
+                    for province in PROVINCE_NAMES:
+                        if address.startswith(province):
+                            address = address[len(province):]
+                            found = True
+                            break
+                    if not found:
+                        raise Exception, u"地址不包含省份: %s" % address
+                    if len(address) > address_limit:
+                        address = address[:address_limit]
+                return address
+            customs_final_df[u'收件人地址'] = customs_final_df[u'收件人地址'].apply(address_trim)
+            package_final_df[u'收件人地址'] = package_final_df[u'收件人地址'].apply(address_trim)
+            customs_final_df[u'发件人地址'] = customs_final_df[u'发件人地址'].apply(
+                lambda x: x if len(x) <= address_limit else x[:address_limit])
+            package_final_df[u'发件人地址'] = package_final_df[u'发件人地址'].apply(
+                lambda x: x if len(x) <= address_limit else x[:address_limit])
+
+            #save
             if 'save_customs_df' in route_config:
                 save_customs_df(route_config, version, customs_final_df, package_final_df, output)
             else:
-                customs_final_df.to_excel(os.path.join(
-                    output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
-
+                wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cc_header.xlsx'))
+                ws = wb["Sheet1"]
+                for r in dataframe_to_rows(customs_final_df, index=False, header=True):
+                    ws.append(r)
+                wb.save(os.path.join(output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)))
 
             package_final_df.to_excel(os.path.join(
                 output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")

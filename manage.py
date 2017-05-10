@@ -26,7 +26,7 @@ if __name__ == '__main__':
         "Find province"
         province, current = City.find_province(name)
         if province:
-            print province.name, province.type
+            print province.name, province.typeda
             print current.name, current.type
         else:
             print "Not Found"
