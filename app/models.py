@@ -109,7 +109,7 @@ class City(db.Model):
     MUNICIPAL_SUFFIX_SET = set([u"市", u"县", u"区", u"盟"])
 
     @staticmethod
-    def __normalize_province(name):
+    def normalize_province(name):
         if name in City.DISTRICTS:
             return name + u"市"
         elif name in City.AUTONOMOUS_SPECIAL_REGION:
@@ -118,7 +118,7 @@ class City(db.Model):
             return name + u"省"
 
     @staticmethod
-    def __normalize_municipality(name):
+    def normalize_municipality(name):
         return name + u"市" if not name[-1] in City.MUNICIPAL_SUFFIX_SET else name
 
     @staticmethod
@@ -129,8 +129,8 @@ class City(db.Model):
             if i >= len(cities):
                 break
             assert(cities[i].type == type)
-        province_name = City.__normalize_province(cities[0].name)
-        municipal_name = City.__normalize_municipality(cities[1].name) \
+        province_name = City.normalize_province(cities[0].name)
+        municipal_name = City.normalize_municipality(cities[1].name) \
             if len(cities) > 1 and cities[0].name <> cities[1].name else ""
 
         if len(cities) < 3:
