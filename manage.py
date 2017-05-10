@@ -7,7 +7,7 @@ from flask_script import Manager, Shell, Server
 from flask_migrate import Migrate, MigrateCommand
 
 from app import db
-from app.models import City
+from app.models import City, Order
 from app.main.postorder import xls_to_orders, read_order_numbers, retract_from_order_numbers
 
 def make_shell_context():
@@ -65,6 +65,32 @@ if __name__ == '__main__':
             import traceback
             traceback.print_exc(sys.stderr)
             print >> sys.stderr, inst.message.encode('utf-8')
+
+    @manager.command
+    def insert_range(type, first, last):
+        try:
+            type = int(type)
+            first = int(first)
+            last = int(last)
+            order_numbers = []
+            if not type in Order.Type.types:
+                raise Exception, "Invalid type: %d" % type
+            for order_number in range(first, last+1):
+                order_number = str(order_number)
+                if not Order.is_order_number_valid(type, order_number):
+                    raise Exception, "Invalid order number %s" % order_number
+                if Order.query.filter_by(order_number=order_number).scalar() is not None:
+                    raise Exception, "Order number exists: %s" % order_number
+                order = Order(order_number=order_number, type=type)
+                db.session.add(order)
+                order_numbers.append(order_number)
+            db.session.commit()
+            print >> sys.stderr, ",".join(order_numbers)
+            print >> sys.stderr, "Total %d" % len(order_numbers)
+        except Exception, inst:
+            import traceback
+            traceback.print_exc(sys.stderr)
+            
 
     migrate = Migrate(app, db)
     manager.add_command("shell", Shell(make_context=make_shell_context))

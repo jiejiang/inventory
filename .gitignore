@@ -13,3 +13,4 @@ app/bower_components
 instance/local_config.py
 logs
 /tts
+*.log
