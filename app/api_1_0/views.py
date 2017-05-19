@@ -277,7 +277,7 @@ class OrderAPI(Resource):
                 or_filters.append(and_(Order.receiver_name==name, Order.receiver_mobile==mobile))
         if args['id']:
             for id in args['id']:
-                or_filters.append(Order.receiver_id_number==id)
+                or_filters.append(func.lower(Order.receiver_id_number) == func.lower(id))
         if not or_filters:
             abort(500, message="Invalid arguments")
         today = datetime.datetime.today()
