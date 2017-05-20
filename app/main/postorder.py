@@ -795,33 +795,28 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
         customs_dfs = data['customs_dfs']
 
         def validate_route(customs_df):
-            products_exclude = route_config['products_exclude'] if 'products_exclude' in route_config else []
-            if products_exclude:
-
-                if version == "v1":
-                    product_col = u"主要商品"
-                    order_number_col = u"企业运单编号"
-                elif version == "v2":
-                    product_col = u"货物名称"
-                    order_number_col = u'分运单号'
-                else:
-                    raise Exception, "Version not supported too %s" % version
+            if version == "v2":
+                product_col = u"货物名称"
+                order_number_col = u'分运单号'
                 count_col = u'件数'
+            else:
+                raise Exception, "Version not supported: %s" % version
 
-                for product_exclude in products_exclude:
-                    product_exclude = product_exclude.strip()
-                    if product_exclude:
-                        excluded = customs_df[product_col].str.contains(product_exclude)
-                        if excluded.any():
-                            order_numbers_excluded = customs_df[excluded][order_number_col].map(lambda x:str(x)).tolist()
-                            raise Exception, u"如下订单号包含违禁产品[%s]: %s" % \
-                                             (product_exclude, ", ".join(order_numbers_excluded))
+            products_exclude = route_config['products_exclude'] if 'products_exclude' in route_config else []
+            for product_exclude in products_exclude:
+                product_exclude = product_exclude.strip()
+                if product_exclude:
+                    excluded = customs_df[product_col].str.contains(product_exclude)
+                    if excluded.any():
+                        order_numbers_excluded = customs_df[excluded][order_number_col].map(lambda x:str(x)).tolist()
+                        raise Exception, u"如下订单号包含违禁产品[%s]: %s" % \
+                                         (product_exclude, ", ".join(order_numbers_excluded))
 
             #hard coded checks
-            def join_func(x):
-                return pd.Series({count_col: x[count_col].sum(), product_col: ' '.join(x[product_col])})
-
             if route_code == 'bc':
+                def join_func(x):
+                    return pd.Series({count_col: x[count_col].sum(), product_col: ' '.join(x[product_col])})
+
                 grouped_df = customs_df[[order_number_col, product_col, count_col]].groupby(order_number_col)\
                     .apply(join_func)
                 four_pieces_no_stage_1_df = grouped_df[(grouped_df[count_col] == 4) &
