@@ -680,6 +680,7 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
 
 def retract_from_order_numbers(download_folder, order_numbers, output, route_config, retraction=None):
     route_name = route_config['name']
+    route_code = route_config['code']
     if not os.path.exists(output):
         os.makedirs(output)
 
@@ -805,6 +806,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                     order_number_col = u'分运单号'
                 else:
                     raise Exception, "Version not supported too %s" % version
+                count_col = u'件数'
 
                 for product_exclude in products_exclude:
                     product_exclude = product_exclude.strip()
@@ -814,6 +816,20 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                             order_numbers_excluded = customs_df[excluded][order_number_col].map(lambda x:str(x)).tolist()
                             raise Exception, u"如下订单号包含违禁产品[%s]: %s" % \
                                              (product_exclude, ", ".join(order_numbers_excluded))
+
+                #hard coded checks
+                def join_func(x):
+                    return pd.Series({count_col: x[count_col].sum(), product_col: ' '.join(x[product_col])})
+
+                if route_code == 'bc':
+                    grouped_df = customs_df[[order_number_col, product_col, count_col]].groupby(order_number_col)\
+                        .apply(join_func)
+                    four_pieces_no_stage_1_df = grouped_df[(grouped_df[count_col] == 4) &
+                                                           (grouped_df[product_col].str.contains(u"段")) &
+                                                           (~grouped_df[product_col].str.contains(u"1段"))]
+                    if len(four_pieces_no_stage_1_df.index) > 0:
+                        raise Exception, u"如下4罐订单不包含1段: %s" % \
+                                         (", ".join(map(lambda x: str(x), four_pieces_no_stage_1_df.index)))
 
         if version == "v1":
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
@@ -893,6 +909,7 @@ def load_order_info(download_folder, order, route_config):
     version = order.job.version if order.job.version else "v1"
     if version <> "v2":
         raise Exception, "Error: Version"
+    route_code = route_config['code']
     product_col = u"货物名称"
     uuid = str(order.job.uuid)
     job_file = os.path.join(download_folder, uuid, uuid + '.zip')
@@ -923,7 +940,15 @@ def load_order_info(download_folder, order, route_config):
                     excluded = sub_customs_df[product_col].str.contains(product_exclude)
                     if excluded.any():
                         raise Exception, "Error: Product Excluded"
-    return sub_customs_df
+        pieces = sub_customs_df[u"件数"].sum()
+
+        #hard coded checks
+        if route_code == 'bc' and pieces == 6:
+            if sub_customs_df[product_col].str.contains(u"段").any(): #check if is milk poweder
+                if not sub_customs_df[product_col].str.contains(u"1段").any(): #if so should always contains stage 1
+                    raise Exception, "Error: Stage 1 Milk Powder Not Found"
+
+    return sub_customs_df, pieces
 
 if __name__ == "__main__":
     parser = OptionParser()

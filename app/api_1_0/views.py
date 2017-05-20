@@ -327,8 +327,7 @@ class OrderInfoAPI(Resource):
                 raise Exception, "Error: Barcode Not Used"
             if order.retraction_id:
                 raise Exception, "Error: Barcode Already Scanned"
-            order_df = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
-            pieces = order_df[u"件数"].sum()
+            order_df, pieces = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
             info['detail'] = "/".join(
                 map(lambda x:"%s(%s)" % (x[0], x[1]),
                     zip(order_df[u"货物名称"].map(lambda x:str(x)).tolist(),
