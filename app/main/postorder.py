@@ -825,7 +825,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                     grouped_df = customs_df[[order_number_col, product_col, count_col]].groupby(order_number_col)\
                         .apply(join_func)
                     four_pieces_no_stage_1_df = grouped_df[(grouped_df[count_col] == 4) &
-                                                           (grouped_df[product_col].str.contains(u"段")) &
+                                                           (grouped_df[product_col].str.contains(u"段|奶粉")) &
                                                            (~grouped_df[product_col].str.contains(u"1段"))]
                     if len(four_pieces_no_stage_1_df.index) > 0:
                         raise Exception, u"如下4罐订单不包含1段: %s" % \
@@ -944,7 +944,7 @@ def load_order_info(download_folder, order, route_config):
 
         #hard coded checks
         if route_code == 'bc' and pieces == 4:
-            if sub_customs_df[product_col].str.contains(u"段").any(): #check if is milk poweder
+            if sub_customs_df[product_col].str.contains(u"段|奶粉").any(): #check if is milk poweder
                 if not sub_customs_df[product_col].str.contains(u"1段").any(): #if so should always contains stage 1
                     raise Exception, "Error: Stage 1 Milk Powder Not Found"
 
