@@ -817,19 +817,19 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                             raise Exception, u"如下订单号包含违禁产品[%s]: %s" % \
                                              (product_exclude, ", ".join(order_numbers_excluded))
 
-                #hard coded checks
-                def join_func(x):
-                    return pd.Series({count_col: x[count_col].sum(), product_col: ' '.join(x[product_col])})
+            #hard coded checks
+            def join_func(x):
+                return pd.Series({count_col: x[count_col].sum(), product_col: ' '.join(x[product_col])})
 
-                if route_code == 'bc':
-                    grouped_df = customs_df[[order_number_col, product_col, count_col]].groupby(order_number_col)\
-                        .apply(join_func)
-                    four_pieces_no_stage_1_df = grouped_df[(grouped_df[count_col] == 4) &
-                                                           (grouped_df[product_col].str.contains(u"段|奶粉")) &
-                                                           (~grouped_df[product_col].str.contains(u"1段"))]
-                    if len(four_pieces_no_stage_1_df.index) > 0:
-                        raise Exception, u"如下4罐订单不包含1段: %s" % \
-                                         (", ".join(map(lambda x: str(x), four_pieces_no_stage_1_df.index)))
+            if route_code == 'bc':
+                grouped_df = customs_df[[order_number_col, product_col, count_col]].groupby(order_number_col)\
+                    .apply(join_func)
+                four_pieces_no_stage_1_df = grouped_df[(grouped_df[count_col] == 4) &
+                                                       (grouped_df[product_col].str.contains(u"段|奶粉")) &
+                                                       (~grouped_df[product_col].str.contains(u"1段"))]
+                if len(four_pieces_no_stage_1_df.index) > 0:
+                    raise Exception, u"如下4罐订单不包含1段: %s" % \
+                                     (", ".join(map(lambda x: str(x), four_pieces_no_stage_1_df.index)))
 
         if version == "v1":
             customs_final_df = pd.concat(customs_dfs, ignore_index=True)
