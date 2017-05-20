@@ -943,7 +943,7 @@ def load_order_info(download_folder, order, route_config):
         pieces = sub_customs_df[u"件数"].sum()
 
         #hard coded checks
-        if route_code == 'bc' and pieces == 6:
+        if route_code == 'bc' and pieces == 4:
             if sub_customs_df[product_col].str.contains(u"段").any(): #check if is milk poweder
                 if not sub_customs_df[product_col].str.contains(u"1段").any(): #if so should always contains stage 1
                     raise Exception, "Error: Stage 1 Milk Powder Not Found"
