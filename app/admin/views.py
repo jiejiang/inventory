@@ -38,7 +38,7 @@ class JobAdmin(LoginRequiredModelView):
 
 class SuccessJobAdmin(JobAdmin):
     list_template = "admin/job/list.html"
-    column_searchable_list = ('uuid', 'creation_time')
+    column_searchable_list = ('uuid', 'creation_time', 'issuer')
     column_exclude_list = ('percentage', 'message')
     column_default_sort = ('completion_time', True)
 
