@@ -67,11 +67,12 @@ if __name__ == '__main__':
             print >> sys.stderr, inst.message.encode('utf-8')
 
     @manager.command
-    def insert_range(type, first, last):
+    def insert_range(type, first, last, commit):
         try:
             type = int(type)
             first = int(first)
             last = int(last)
+            commit = True if commit == 'commit' else False
             order_numbers = []
             if not type in Order.Type.types:
                 raise Exception, "Invalid type: %d" % type
@@ -84,9 +85,13 @@ if __name__ == '__main__':
                 order = Order(order_number=order_number, type=type)
                 db.session.add(order)
                 order_numbers.append(order_number)
-            db.session.commit()
             print >> sys.stderr, ",".join(order_numbers)
             print >> sys.stderr, "Total %d" % len(order_numbers)
+            if commit:
+                print >> sys.stderr, "Commit"
+                db.session.commit()
+            else:
+                print >> sys.stderr, "Dry run"
         except Exception, inst:
             import traceback
             traceback.print_exc(sys.stderr)
