@@ -3,12 +3,13 @@ from markupsafe import Markup
 
 __author__ = 'jie'
 
-from flask import redirect, url_for
+from flask import redirect, url_for, flash
 from flask_admin.contrib import sqla
 from flask_admin.menu import MenuLink
 from flask_admin.model.form import InlineFormAdmin
 from sqlalchemy import func, desc, or_
 from flask_user import current_user
+from flask_admin.actions import action
 
 from .. import db
 from . import admin
@@ -73,6 +74,7 @@ class OrderAdmin(LoginRequiredModelView):
     column_details_exclude_list = ('job',)
 
 class UsedOrderAdmin(OrderAdmin):
+    list_template = "admin/order/list.html"
     can_create = False
     can_delete = False
     can_edit = False
@@ -84,6 +86,22 @@ class UsedOrderAdmin(OrderAdmin):
 
     def get_count_query(self):
         return self.session.query(func.count('*')).filter(self.model.used == True)
+
+    @action('reuse', u"回收单号", u"您确定需要回收这些单号？")
+    def action_approve(self, ids):
+        try:
+            order_numbers = []
+            query = Order.query.filter(Order.id.in_(ids)).order_by(desc(Order.used_time))
+            for order in query.all():
+                order_numbers.append(order.order_number)
+                order.make_reusable()
+            db.session.commit()
+            flash(u"如下单号已经回收：[%s]" % ", ".join(order_numbers))
+        except Exception, inst:
+            if not self.handle_view_exception(inst):
+                raise
+            flash(u"无法回收单号：[%s]。错误如下：\n%s" % (", ".join(order_numbers), str(inst)), "error")
+
 
 class UnusedOrderAdmin(OrderAdmin):
     can_create = False
