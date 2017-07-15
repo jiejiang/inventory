@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+import json
+
 __author__ = 'jie'
 
 import sys
 from sqlalchemy import not_
 from werkzeug.utils import secure_filename
 import os, datetime, zipfile
-from flask import request, current_app, Response, send_from_directory
+from flask import request, current_app, Response, send_from_directory, make_response
 from flask_restful import Resource, fields, marshal_with, marshal
 from flask_restful import abort, reqparse
 from redis import ConnectionError
@@ -14,7 +16,7 @@ from sqlalchemy import func, desc, or_, and_
 import pandas as pd
 from . import api
 from .. import db
-from ..models import Job, Order, Retraction
+from ..models import Job, Order, Retraction, City
 from ..util import time_to_filename
 from ..main.postorder import read_order_numbers, retract_from_order_numbers, load_order_info
 from auth import http_basic_auth, login_required
@@ -37,6 +39,7 @@ class BatchOrderListAPI(Resource):
         from ..main.jobs import batch_order
 
         issuer = request.form['issuer'] if 'issuer' in request.form else None
+        test_mode = request.form['test_mode'] if 'test_mode' in request.form else False
 
         file = request.files['file']
         if file:
@@ -56,7 +59,7 @@ class BatchOrderListAPI(Resource):
                 if not os.path.exists(workdir):
                     os.makedirs(workdir)
 
-                batch_order.delay(job.uuid, save_filename, workdir)
+                batch_order.delay(job.uuid, save_filename, workdir, test_mode=test_mode)
 
                 return {'id': job.uuid, }
             except ConnectionError, inst:
@@ -364,3 +367,19 @@ class OrderStatusAPI(Resource):
             abort(404)
 
 api.add_resource(OrderStatusAPI, '/order/<order_number>')
+
+
+class CityListAPI(Resource):
+    method_decorators = [login_required, ]
+
+    def get(self):
+        provinces = []
+        for province in City.query.filter_by(type=City.Type.PROVINCE).order_by('id'):
+            municipals = []
+            for municipal in City.query.filter_by(parent_id=province.id).order_by('id'):
+                municipals.append({'name' : municipal.name})
+            provinces.append({'name' : province.name, 'contains': municipals})
+        return make_response(
+            json.dumps(provinces, ensure_ascii=False, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'))
+
+api.add_resource(CityListAPI, '/cities')

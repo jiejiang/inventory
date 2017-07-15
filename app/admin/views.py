@@ -94,12 +94,13 @@ class UsedOrderAdmin(OrderAdmin):
             query = Order.query.filter(Order.id.in_(ids)).order_by(desc(Order.used_time))
             for order in query.all():
                 order_numbers.append(order.order_number)
+                if order.retraction_id:
+                    raise Exception, u"无法回收已提取单号: %s" % order.order_number
                 order.make_reusable()
             db.session.commit()
             flash(u"如下单号已经回收：[%s]" % ", ".join(order_numbers))
         except Exception, inst:
-            if not self.handle_view_exception(inst):
-                raise
+
             flash(u"无法回收单号：[%s]。错误如下：\n%s" % (", ".join(order_numbers), str(inst)), "error")
 
 

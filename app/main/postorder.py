@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import cStringIO
+import cStringIO, json
 
 __author__ = 'jie'
 
@@ -271,7 +271,7 @@ def fetch_ticket_number(n_row, receiver_city):
     return u"国际件", order, province_name, municipal_name, address_header
 
 
-def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
+def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_generator=None):
     p_data = []
     c_data = []
     sender_name = in_row[u'发件人名字']
@@ -316,19 +316,22 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None):
     receiver_province_city_font_size = "3" if len(
         pc_text) <= 10 else "2.5" if len(pc_text) <= 15 else "2"
 
-    order.used = True
-    order.used_time = datetime.datetime.utcnow()
-    order.sender_address = ", ".join(
-        (sender_name, sender_address, sender_phone))
-    order.receiver_address = ", ".join(
-        (receiver_address, receiver_city, receiver_post_code))
-    order.receiver_mobile = receiver_mobile
-    order.receiver_id_number = id_number
-    order.receiver_name = receiver_name
-    if job:
-        order.job = job
-        job.version = "v2"
-    ticket_number = order.order_number
+    if not ticket_number_generator:
+        order.used = True
+        order.used_time = datetime.datetime.utcnow()
+        order.sender_address = ", ".join(
+            (sender_name, sender_address, sender_phone))
+        order.receiver_address = ", ".join(
+            (receiver_address, receiver_city, receiver_post_code))
+        order.receiver_mobile = receiver_mobile
+        order.receiver_id_number = id_number
+        order.receiver_name = receiver_name
+        if job:
+            order.job = job
+            job.version = "v2"
+        ticket_number = order.order_number
+    else:
+        ticket_number = ticket_number_generator.next()
     full_address = "".join(filter(
         lambda x: x.strip(), (receiver_province, receiver_city, receiver_address)))
 
@@ -430,7 +433,7 @@ def normalize_columns(in_df):
     in_df.columns = map(lambda x: "".join(x.strip().split()), in_df.columns)
 
 
-def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
+def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None, test_mode=False):
     if percent_callback:
         percent_callback(0)
     in_df = pd.read_excel(input, converters={
@@ -467,23 +470,50 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None):
         os.makedirs(barcode_dir)
 
     ticket_numbers = []
+    ticket_number_set = set()
+    test_ticket_number_generator = None
+    if test_mode:
+        def ticket_number_generator():
+            start_number = 1
+            while True:
+                yield "TEST%s" % str(start_number).zfill(8)
+                start_number += 1
+
+        test_ticket_number_generator = ticket_number_generator()
+        if job:
+            job.version = "test_mode"
     for index, in_row in in_df.iterrows():
         ticket_number, p_data, c_data = process_row(
-            index, in_row, barcode_dir, tmpdir, job)
+            index, in_row, barcode_dir, tmpdir, job, test_ticket_number_generator)
+        if ticket_number in ticket_number_set:
+            raise Exception, u"同批次单号%s重复，请联系客服！" % ticket_number
+        ticket_number_set.add(ticket_number)
         ticket_numbers.append(ticket_number)
         package_data.append(p_data)
         customs_data.append(c_data)
         if percent_callback:
             percent_callback(int(index * 100.0 / len(in_df.index)))
 
+    waybills = []
+    total_page_number = 0
     merger = PdfFileMerger()
     for ticket_number in ticket_numbers:
         pdf_file = os.path.join(barcode_dir, "%s.pdf" % ticket_number)
         if not os.path.exists(pdf_file):
             raise Exception, "Failed to generate pdf: %s" % ticket_number
-        merger.append(PdfFileReader(file(pdf_file, 'rb')))
+        pdf_file_reader = PdfFileReader(file(pdf_file, 'rb'))
+        page_number = pdf_file_reader.getNumPages()
+        waybills.append({
+            'tracking_no': ticket_number,
+            'start_page': total_page_number,
+            'end_page' : total_page_number + page_number,
+        })
+        total_page_number += page_number
+        merger.append(pdf_file_reader)
     merger.write(os.path.join(
         output, u"面单_%d单%d页.pdf".encode('utf8') % (len(ticket_numbers), len(ticket_numbers) * 2)))
+    with open(os.path.join(output, "waybills.json"), 'w') as outfile:
+        json.dump(waybills, outfile)
     shutil.rmtree(barcode_dir)
 
     package_final_df = pd.concat(package_data, ignore_index=True)
