@@ -372,12 +372,48 @@ api.add_resource(OrderStatusAPI, '/order/<order_number>')
 class CityListAPI(Resource):
     method_decorators = [login_required, ]
 
+    filter_city_set = set([
+        u"高新开发区",  u"矿区",  u"海州区",  u"桥西区",  u"开发区",  u"宝山区",  u"新市区",  u"高新区",  u"经济技术开发区",
+        u"东山区",  u"桥东区",  u"新华区",  u"铁东区",  u"西安区",  u"普陀区",  u"新区",  u"城中区",  u"城关区",  u"河东区",
+        u"西湖区",  u"市区",  u"经济开发区",  u"西市区",  u"白云区",  u"清河区",  u"市郊",  u"铁西区",  u"城区",  u"新城区",
+        u"朝阳区",  u"太平区",  u"南山区",  u"长安区",  u"江北区",  u"青山区",  u"海原县",  u"中宁县",  u"海南",  u"鼓楼区",
+        u"东城区",  u"市中区",  u"向阳区",  u"双桥区",  u"和平区", u"郊区"])
+
     def get(self):
+        names = set()
+        def check_dup(name, name2=None):
+            if name <> name2 and name in names:
+                print "duplicate: %s" % name
+            names.add(name)
+
         provinces = []
+        province_set = set()
         for province in City.query.filter_by(type=City.Type.PROVINCE).order_by('id'):
+            if province.name in province_set or province.name in CityListAPI.filter_city_set:
+                continue
+            province_set.add(province.name)
+
+            check_dup(province.name)
+
             municipals = []
-            for municipal in City.query.filter_by(parent_id=province.id).order_by('id'):
-                municipals.append({'name' : municipal.name})
+            municipal_set = set()
+            for municipal in City.query.filter_by(parent_id=province.id, type=City.Type.MUNICIPALITY).order_by('id'):
+                if municipal.name in municipal_set or municipal.name in CityListAPI.filter_city_set:
+                    continue
+                municipal_set.add(municipal.name)
+
+                check_dup(municipal.name, province.name)
+
+                counties = []
+                county_set = set()
+                for county in City.query.filter_by(parent_id=municipal.id, type=City.Type.COUNTY).order_by('id'):
+                    if county.name in county_set or county.name in CityListAPI.filter_city_set:
+                        continue
+                    county_set.add(county.name)
+
+                    check_dup(county.name, municipal.name)
+                    counties.append({'name' : county.name})
+                municipals.append({'name' : municipal.name, 'contains': counties})
             provinces.append({'name' : province.name, 'contains': municipals})
         return make_response(
             json.dumps(provinces, ensure_ascii=False, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'))
