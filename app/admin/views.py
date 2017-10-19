@@ -31,10 +31,14 @@ class JobAdmin(LoginRequiredModelView):
     def _show_status(view, context, model, name):
         return model.status_string
 
+    def _show_order_count(view, context, model, name):
+        return model.orders.count()
+
     column_formatters = {
         'status': _show_status,
         'creation_time': lambda v, c, m, p: time_format(m.creation_time),
         'completion_time': lambda v, c, m, p: time_format(m.completion_time),
+        'order_count': _show_order_count,
     }
 
 class SuccessJobAdmin(JobAdmin):
@@ -42,6 +46,7 @@ class SuccessJobAdmin(JobAdmin):
     column_searchable_list = ('uuid', 'creation_time', 'issuer')
     column_exclude_list = ('percentage', 'message')
     column_default_sort = ('completion_time', True)
+    column_list = ('uuid', 'status', 'completion_time', 'order_count', 'version', 'issuer')
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.status == Job.Status.COMPLETED)
@@ -51,6 +56,7 @@ class SuccessJobAdmin(JobAdmin):
 
 class FailedJobAdmin(JobAdmin):
     column_default_sort = ('creation_time', True)
+    column_list = ('uuid', 'status', 'creation_time', 'percentage', 'message', 'issuer')
 
     def get_query(self):
         return self.session.query(self.model).filter(or_(self.model.status == Job.Status.FAILED, self.model.status == Job.Status.DELETED))
