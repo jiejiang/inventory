@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-from markupsafe import Markup
 
 __author__ = 'jie'
 
-from flask import redirect, url_for, flash
+import os, zipfile
+import pandas as pd
+from markupsafe import Markup
+from flask import redirect, url_for, flash, current_app
 from flask_admin.contrib import sqla
 from flask_admin.menu import MenuLink
 from flask_admin.model.form import InlineFormAdmin
@@ -32,7 +34,26 @@ class JobAdmin(LoginRequiredModelView):
         return model.status_string
 
     def _show_order_count(view, context, model, name):
-        return model.orders.count()
+        #return model.orders.count() #cannot use this because the case of order number re-use
+        job_file = os.path.join(current_app.config['DOWNLOAD_FOLDER'], model.uuid, model.uuid + '.zip')
+        if not os.path.exists(job_file):
+            return ""
+        try:
+            with zipfile.ZipFile(job_file) as z:
+                customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
+                    u"企业运单编号": lambda x: str(x),
+                    u"收件人省市区代码": lambda x: str(x),
+                    u"收件人电话": lambda x: str(x),
+                    u"收件人证件号码": lambda x: str(x),
+                    u"发货人省市区代码": lambda x: str(x),
+                    u"发货人电话": lambda x: str(x),
+                    u"商品备案号": lambda x: str(x),
+                    u"发货人电话": lambda x: str(x),
+                    u'计量单位': lambda x: str(x),
+                })
+                return len(customs_df.index)
+        except Exception, inst:
+            return ""
 
     column_formatters = {
         'status': _show_status,
