@@ -33,11 +33,11 @@ class JobAdmin(LoginRequiredModelView):
     def _show_status(view, context, model, name):
         return model.status_string
 
-    def _show_order_count(view, context, model, name):
+    def _show_item_count(view, context, model, name):
         #return model.orders.count() #cannot use this because the case of order number re-use
         job_file = os.path.join(current_app.config['DOWNLOAD_FOLDER'], model.uuid, model.uuid + '.zip')
         if not os.path.exists(job_file):
-            return ""
+            return "%d (orders)" % model.orders.count()
         try:
             with zipfile.ZipFile(job_file) as z:
                 customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
@@ -53,13 +53,13 @@ class JobAdmin(LoginRequiredModelView):
                 })
                 return len(customs_df.index)
         except Exception, inst:
-            return ""
+            return "%d (orders)" % model.orders.count()
 
     column_formatters = {
         'status': _show_status,
         'creation_time': lambda v, c, m, p: time_format(m.creation_time),
         'completion_time': lambda v, c, m, p: time_format(m.completion_time),
-        'order_count': _show_order_count,
+        'item_count': _show_item_count,
     }
 
 class SuccessJobAdmin(JobAdmin):
@@ -67,7 +67,7 @@ class SuccessJobAdmin(JobAdmin):
     column_searchable_list = ('uuid', 'creation_time', 'issuer')
     column_exclude_list = ('percentage', 'message')
     column_default_sort = ('completion_time', True)
-    column_list = ('uuid', 'status', 'completion_time', 'order_count', 'version', 'issuer')
+    column_list = ('uuid', 'status', 'completion_time', 'item_count', 'version', 'issuer')
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.status == Job.Status.COMPLETED)
