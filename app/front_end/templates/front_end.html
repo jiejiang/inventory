@@ -50,6 +50,10 @@
                     </li>
 
                     <li>
+                        <a href="#/merge-excel" ng-class="{active: isActive('/merge-excel')}"><i class="fa fa-files-o"></i> 合并提取结果</a>
+                    </li>
+
+                    <li>
                         <a href="/{[route_prefix]}/admin/admin.success_jobs"><i class="fa fa-clock-o"></i> 历史生成订单下载</a>
                     </li>
 
@@ -131,7 +135,7 @@
         "front_end/js/controllers/batch-order.js", "front_end/js/factories/batch-order.js",
         "front_end/js/controllers/new-order-numbers.js", "front_end/js/controllers/retract-orders.js",
         "front_end/js/controllers/scan-barcode.js", "front_end/js/factories/scan-order.js",
-        "front_end/js/factories/route-info.js" %}
+        "front_end/js/factories/route-info.js", "front_end/js/controllers/merge-excel.js" %}
         <script type="text/javascript" src="{{ ASSET_URL }}"></script>
     {% endassets %}
 

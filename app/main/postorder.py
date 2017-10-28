@@ -543,13 +543,21 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None, test_m
 
 
 def read_order_numbers(inxlsx):
+    columns = [u'提取单号', u'分运单号', u'快件单号', u'物流运单编号']
     df = pd.read_excel(inxlsx, converters={
-        u"提取单号": lambda x: str(x)
+        key: lambda x: str(x) for key in columns
     })
-    if not u"提取单号" in df:
+    column = None
+    for key in columns:
+        if key in df:
+            column = key
+    if not column:
         raise Exception, u"输入Excel格式错误"
-    order_numbers = df[u"提取单号"]
+    order_numbers = df[column].unique()
+    if len(order_numbers) <= 0:
+        raise Exception, u"输入[%s]列为空" % column
     return order_numbers
+
 
 def save_customs_df(route_config, version, customs_df, package_df, output):
 
@@ -711,8 +719,10 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
 def retract_from_order_numbers(download_folder, order_numbers, output, route_config, retraction=None):
     route_name = route_config['name']
     route_code = route_config['code']
-    if not os.path.exists(output):
-        os.makedirs(output)
+
+    if not output is None:
+        if not os.path.exists(output):
+            os.makedirs(output)
 
     # find all jobs and job to order number map
     receiver_sig_to_order_numbers = {}
@@ -856,79 +866,77 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                     raise Exception, u"如下4罐订单不包含1段: %s" % \
                                      (", ".join(map(lambda x: str(x), four_pieces_no_stage_1_df.index)))
 
-        if version == "v1":
-            customs_final_df = pd.concat(customs_dfs, ignore_index=True)
-            customs_final_df[u'订单编号'] = None
-            customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
+        customs_final_df = pd.concat(customs_dfs, ignore_index=True)
+        package_final_df = pd.concat(package_dfs, ignore_index=True)
+        package_final_df.index += 1
 
-            validate_route(customs_final_df)
+        validate_route(customs_final_df)
 
-            if 'save_customs_df' in route_config:
-                raise Exception, "save_customs_df not supported in v1"
+        if output:
+            if version == "v1":
+                customs_final_df[u'订单编号'] = None
+                customs_final_df[u'商品货号'] = range(1, len(customs_final_df.index) + 1)
 
-            customs_final_df.to_excel(os.path.join(
-                output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
+                if 'save_customs_df' in route_config:
+                    raise Exception, "save_customs_df not supported in v1"
 
-            package_final_df = pd.concat(package_dfs, ignore_index=True)
-            package_final_df.index += 1
-            package_final_df.to_excel(os.path.join(
-                output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
-            receiver_columns = [u'收件人证件号码', u'收件人姓名']
-            receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
-            receiver_df.to_excel(os.path.join(
-                output, u"收件人信息_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
+                customs_final_df.to_excel(os.path.join(
+                    output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
 
-        elif version == "v2":
-            customs_final_df = pd.concat(customs_dfs, ignore_index=True)
-            customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
-            package_final_df = pd.concat(package_dfs, ignore_index=True)
-            package_final_df.index += 1
+                package_final_df.to_excel(os.path.join(
+                    output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
+                receiver_columns = [u'收件人证件号码', u'收件人姓名']
+                receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
+                receiver_df.to_excel(os.path.join(
+                    output, u"收件人信息_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
 
-            validate_route(customs_final_df)
+            elif version == "v2":
+                customs_final_df[u'序号'] = range(1, len(customs_final_df.index) + 1)
+                #global changes
+                customs_final_df[u'随附单证类型'] = 1 #default value on 10/5/2017
 
-            #global changes
-            customs_final_df[u'随附单证类型'] = 1 #default value on 10/5/2017
-
-            #limit the address size on 10/5/2017
-            address_limit = 24
-            def address_trim(address):
-                if len(address) > address_limit:
-                    found = False
-                    for province in PROVINCE_NAMES:
-                        if address.startswith(province):
-                            address = address[len(province):]
-                            found = True
-                            break
-                    if not found:
-                        raise Exception, u"地址不包含省份: %s" % address
+                #limit the address size on 10/5/2017
+                address_limit = 24
+                def address_trim(address):
                     if len(address) > address_limit:
-                        address = address[:address_limit]
-                return address
-            customs_final_df[u'收件人地址'] = customs_final_df[u'收件人地址'].apply(address_trim)
-            package_final_df[u'收件人地址'] = package_final_df[u'收件人地址'].apply(address_trim)
-            customs_final_df[u'发件人地址'] = customs_final_df[u'发件人地址'].apply(
-                lambda x: x if len(x) <= address_limit else x[:address_limit])
-            package_final_df[u'发件人地址'] = package_final_df[u'发件人地址'].apply(
-                lambda x: x if len(x) <= address_limit else x[:address_limit])
+                        found = False
+                        for province in PROVINCE_NAMES:
+                            if address.startswith(province):
+                                address = address[len(province):]
+                                found = True
+                                break
+                        if not found:
+                            raise Exception, u"地址不包含省份: %s" % address
+                        if len(address) > address_limit:
+                            address = address[:address_limit]
+                    return address
+                customs_final_df[u'收件人地址'] = customs_final_df[u'收件人地址'].apply(address_trim)
+                package_final_df[u'收件人地址'] = package_final_df[u'收件人地址'].apply(address_trim)
+                customs_final_df[u'发件人地址'] = customs_final_df[u'发件人地址'].apply(
+                    lambda x: x if len(x) <= address_limit else x[:address_limit])
+                package_final_df[u'发件人地址'] = package_final_df[u'发件人地址'].apply(
+                    lambda x: x if len(x) <= address_limit else x[:address_limit])
 
-            #save
-            if 'save_customs_df' in route_config:
-                save_customs_df(route_config, version, customs_final_df, package_final_df, output)
+                #save
+                if 'save_customs_df' in route_config:
+                    save_customs_df(route_config, version, customs_final_df, package_final_df, output)
+                else:
+                    wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cc_header.xlsx'))
+                    ws = wb["Sheet1"]
+                    for r in dataframe_to_rows(customs_final_df, index=False, header=True):
+                        ws.append(r)
+                    wb.save(os.path.join(output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)))
+
+                package_final_df.to_excel(os.path.join(
+                    output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
+                receiver_columns = [u'收发件人证件号', u'收件人']
+                receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
+                receiver_df.to_excel(os.path.join(
+                    output, u"收件人信息_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
             else:
-                wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cc_header.xlsx'))
-                ws = wb["Sheet1"]
-                for r in dataframe_to_rows(customs_final_df, index=False, header=True):
-                    ws.append(r)
-                wb.save(os.path.join(output, u"江门申报单_%s_%s.xlsx".encode('utf8') % (version, route_name)))
+                raise Exception, "Version not supported too %s" % version
 
-            package_final_df.to_excel(os.path.join(
-                output, u"机场报关单_%s_%s.xlsx".encode('utf8') % (version, route_name)), index_label="NO")
-            receiver_columns = [u'收发件人证件号', u'收件人']
-            receiver_df = customs_final_df[receiver_columns].drop_duplicates(receiver_columns)
-            receiver_df.to_excel(os.path.join(
-                output, u"收件人信息_%s_%s.xlsx".encode('utf8') % (version, route_name)), index=False)
-        else:
-            raise Exception, "Version not supported too %s" % version
+    return customs_final_df, package_final_df
 
 def load_order_info(download_folder, order, route_config):
     version = order.job.version if order.job.version else "v1"

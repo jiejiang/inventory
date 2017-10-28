@@ -3,7 +3,7 @@ import json
 
 __author__ = 'jie'
 
-import sys
+import sys, json
 from sqlalchemy import not_
 from werkzeug.utils import secure_filename
 import os, datetime, zipfile
@@ -22,6 +22,12 @@ from ..main.postorder import read_order_numbers, retract_from_order_numbers, loa
 from auth import http_basic_auth, login_required
 
 STREAM_BUF_SIZE = 2048
+
+def wrap_json_response(data):
+    return data, 200, {
+        'Last-Modified': datetime.datetime.now(),
+        'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
+        'Pragma': 'no-cache', 'Expires': -1}
 
 def get_object_or_404(model, *criterion):
     try:
@@ -61,7 +67,7 @@ class BatchOrderListAPI(Resource):
 
                 batch_order.delay(job.uuid, save_filename, workdir, test_mode=test_mode)
 
-                return {'id': job.uuid, }
+                return wrap_json_response({'id': job.uuid, })
             except ConnectionError, inst:
                 if job:
                     job.delete()
@@ -108,10 +114,7 @@ class JobAPI(Resource):
     @marshal_with(fields)
     def get(self, job_id):
         job = get_object_or_404(Job, Job.uuid==job_id)
-        return job, 200, {'Last-Modified': datetime.datetime.now(),
-                          'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
-                          'Pragma' : 'no-cache', 'Expires': -1}
-
+        return wrap_json_response(job)
 
 class OrderListAPI(Resource):
     method_decorators = [login_required, ]
@@ -152,8 +155,8 @@ class OrderListAPI(Resource):
                 db.session.commit()
                 if not found:
                     raise Exception, u"输入未包含有效订单列"
-                return {'inserted_order_numbers': inserted_order_numbers, 'invalid_order_numbers' : invalid_order_numbers,
-                        'existing_order_numbers' : existing_order_numbers}
+                return wrap_json_response({'inserted_order_numbers': inserted_order_numbers, 'invalid_order_numbers' : invalid_order_numbers,
+                        'existing_order_numbers' : existing_order_numbers})
             except Exception, inst:
                 db.session.rollback()
                 import traceback
@@ -173,9 +176,9 @@ class OrderListAPI(Resource):
         used_query = Order.query.filter_by(used=True)
         used_count = used_query.count()
         unretracted_count = used_query.filter_by(retraction=None).count()
-        return { 'stats' :stats, 'used_count' : used_query.count(), 'unretracted_count': unretracted_count,
+        return wrap_json_response({ 'stats' :stats, 'used_count' : used_query.count(), 'unretracted_count': unretracted_count,
                  'retracted_count': used_count - unretracted_count,
-                 'alert_thresholds' : current_app.config['ALERT_THRESHOLDS']}
+                 'alert_thresholds' : current_app.config['ALERT_THRESHOLDS']})
 
 class RetractionAPI(Resource):
     method_decorators = [login_required, ]
@@ -187,6 +190,7 @@ class RetractionAPI(Resource):
         if not route in current_app.config['ROUTE_CONFIG']:
             abort(500, message=u"线路选择错误")
         route_config = current_app.config['ROUTE_CONFIG'][route]
+        dryrun = request.form.get('dryrun', False)
         file = request.files['file']
         if file:
             curdir = os.getcwd()
@@ -199,34 +203,60 @@ class RetractionAPI(Resource):
                 if len(order_numbers) <= 0:
                     raise Exception, u"输入[提取单号]列为空"
 
-                retraction = Retraction.new()
-                outdir = os.path.join(os.path.join(current_app.config['RETRACTION_FOLDER']), retraction.uuid)
-                tmpdir = os.path.join(os.path.join(outdir), "tmp")
-                if os.path.exists(outdir):
-                    raise Exception, u"uuid目录已用:%s" % retraction.uuid
-                os.makedirs(outdir)
-                retract_from_order_numbers(current_app.config['DOWNLOAD_FOLDER'], order_numbers, tmpdir, route_config,
+                if dryrun:
+                    retraction = None
+                    outdir = None
+                    tmpdir = None
+                else:
+                    retraction = Retraction.new()
+                    outdir = os.path.join(os.path.join(current_app.config['RETRACTION_FOLDER']), retraction.uuid)
+                    tmpdir = os.path.join(os.path.join(outdir), "tmp")
+                    if os.path.exists(outdir):
+                        raise Exception, u"uuid目录已用:%s" % retraction.uuid
+                    os.makedirs(outdir)
+
+                customs_df, package_df = retract_from_order_numbers(current_app.config['DOWNLOAD_FOLDER'], order_numbers, tmpdir, route_config,
                                            retraction)
-                outfile = os.path.abspath(os.path.join(outdir, retraction.uuid + ".zip"))
-                os.chdir(tmpdir)
-                zf = zipfile.ZipFile(outfile, "w", compression=zipfile.ZIP_DEFLATED)
-                for root, dirs, files in os.walk("."):
-                    if root <> ".":
-                        zf.write(root)
-                    for filename in files:
-                        filepath = os.path.join(root, filename)
-                        zf.write(filepath, arcname=filepath.decode('utf8'))
-                zf.close()
-                retraction.success = True
-                db.session.commit()
-                return {'order_numbers': order_numbers.tolist(), 'id': retraction.uuid}
+                if dryrun:
+                    def join_func(row):
+                        receiver = row[u'收件人'].unique()
+                        assert (len(receiver) == 1)
+                        id_number = row[u'收发件人证件号'].unique()
+                        assert (len(id_number) == 1)
+                        return pd.Series({
+                            'message': '%s Pieces, OK' % row[u"件数"].sum(), 'receiver_name': receiver[0],
+                            'receiver_id_number': id_number[0],
+                            'detail': "/".join(map(lambda x: "%s(%s)" % (x[0], x[1]), zip(row[u"货物名称"], row[u"件数"]))),
+                        })
+
+                    extract_df = customs_df[[u'分运单号', u'件数', u'货物名称', u'收件人', u'收发件人证件号']]\
+                        .groupby(u'分运单号').apply(join_func)
+                    extract_df['barcode'] = extract_df.index
+
+                    return wrap_json_response(json.loads(extract_df.to_json(orient='records')))
+                else:
+                    outfile = os.path.abspath(os.path.join(outdir, retraction.uuid + ".zip"))
+                    os.chdir(tmpdir)
+                    zf = zipfile.ZipFile(outfile, "w", compression=zipfile.ZIP_DEFLATED)
+                    for root, dirs, files in os.walk("."):
+                        if root <> ".":
+                            zf.write(root)
+                        for filename in files:
+                            filepath = os.path.join(root, filename)
+                            zf.write(filepath, arcname=filepath.decode('utf8'))
+                    zf.close()
+                    retraction.success = True
+                    db.session.commit()
+                    return wrap_json_response({'order_numbers': order_numbers.tolist(), 'id': retraction.uuid})
             except Exception, inst:
-                db.session.rollback()
+                if not dryrun:
+                    db.session.rollback()
                 import traceback
                 traceback.print_exc(sys.stderr)
                 abort(500, message=str(inst))
             finally:
-                os.chdir(curdir)
+                if not dryrun:
+                    os.chdir(curdir)
         else:
             abort(500, message="File not attached!")
 
@@ -285,7 +315,7 @@ class OrderAPI(Resource):
             abort(500, message="Invalid arguments")
         today = datetime.datetime.today()
         start_day = today - datetime.timedelta(days=args['days']+1)
-        return Order.query.filter(or_(*or_filters)).filter(Order.used_time >= start_day).order_by(desc(Order.used_time)).all()
+        return wrap_json_response(Order.query.filter(or_(*or_filters)).filter(Order.used_time >= start_day).order_by(desc(Order.used_time)).all())
 
 api.add_resource(OrderAPI, '/order')
 
@@ -301,10 +331,7 @@ class RouteInfoAPI(Resource):
     def get(self, route):
         if not route in current_app.config['ROUTE_CONFIG']:
             abort(500, message="Route Not Exist")
-        return current_app.config['ROUTE_CONFIG'][route], 200, {
-            'Last-Modified': datetime.datetime.now(),
-            'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
-            'Pragma': 'no-cache', 'Expires': -1}
+        return wrap_json_response(current_app.config['ROUTE_CONFIG'][route])
 
 
 api.add_resource(RouteInfoAPI, '/route-info/<route>')
@@ -342,10 +369,7 @@ class OrderInfoAPI(Resource):
         except Exception, inst:
             info['success'] = False
             info['message'] = inst.message
-        return info, 200, {
-            'Last-Modified': datetime.datetime.now(),
-            'Cache-Control': 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
-            'Pragma': 'no-cache', 'Expires': -1}
+        return wrap_json_response(info)
 
 api.add_resource(OrderInfoAPI, '/scan-order/<order_number>')
 
@@ -362,7 +386,7 @@ class OrderStatusAPI(Resource):
         http_basic_auth(request.authorization)
         order = Order.query.filter_by(order_number=order_number).first()
         if order and order.used:
-            return order
+            return wrap_json_response(order)
         else:
             abort(404)
 

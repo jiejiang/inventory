@@ -1,7 +1,7 @@
 'use strict';
 
-postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$http', '$cacheFactory', '$window', '$log',
-    function($scope, ScanOrder, RouteInfo, $http, $cacheFactory, $window, $log) {
+postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'RouteInfo', '$http', '$cacheFactory', '$window', '$log',
+    function($scope, Upload, ScanOrder, RouteInfo, $http, $cacheFactory, $window, $log) {
 
     $scope.initialize = function () {
         $scope.validScan = [];
@@ -9,6 +9,9 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
         $scope.barcodeStorage = new Object();
         $scope.receiverCount = new Object();
         $scope.exportBarcodes = "";
+        $scope.clearAlerts();
+        $scope.running = false;
+        $scope.preScansList = [];
     };
 
     $scope.initialize();
@@ -28,7 +31,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
         }
     };
 
-    $scope.cache = $cacheFactory('scan-prompt');
+    $scope.cache = $cacheFactory.get('scan-prompt') || $cacheFactory('scan-prompt');
 
     $scope.playAudio = function(sentence) {
         var audio = $scope.cache.get(sentence);
@@ -110,8 +113,8 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
                         if (!$scope.receiverCount.hasOwnProperty(receiver_id_number)) {
                             $scope.receiverCount[receiver_id_number] = 0;
                         }
-                        if ($scope.receiverCount[receiver_id_number] >= $scope.route_info['max_order_number_per_receiver']) {
-                            message = "Error: Exceeded Personal Package Allowance";
+                        if ($scope.route_info['max_order_number_per_receiver'] & $scope.receiverCount[receiver_id_number] >= $scope.route_info['max_order_number_per_receiver']) {
+                            message = "Error: Exceeded Personal Package Allowance: " + $scope.route_info['max_order_number_per_receiver'];
                             $scope.invalidScan.push({barcode:barcode, prompt:message});
 
                             $scope.getAcceptClass = getInactiveClass;
@@ -152,6 +155,85 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'ScanOrder', 'RouteInfo', '$h
             var barcode = $scope.barcode;
             $scope.barcode = '';
             $scope.onScan(barcode);
+        }
+    };
+
+    $scope.$watch('file', function () {
+        $scope.clearAlerts();
+        $scope.running = false;
+        $scope.upload($scope.file);
+    });
+
+    $scope.upload = function (file) {
+        if (file != undefined) {
+            (function() {
+
+                $scope.running = true;
+
+                Upload.upload({
+                    url: $scope.$parent.api_prefix + '/retract-orders',
+                    file: file,
+                    data: {route: $scope.route, dryrun: true},
+                }).progress(function (evt) {
+                }).success(function (data, status, headers, config) {
+                    //precombine validate
+                    var _barcodeStorage = new Object();
+                    var _receiverCount = new Object();
+                    for (var i = 0, len = data.length; i < len; i++) {
+                        var scan = data[i];
+                        if (_barcodeStorage.hasOwnProperty(scan.barcode) || $scope.barcodeStorage.hasOwnProperty(scan.barcode)){
+                            $scope.addAlert('Loading failed with duplicated scanned barcode: ' + scan.barcode);
+                            return;
+                        }
+                        if (!_receiverCount.hasOwnProperty(scan.receiver_id_number)) {
+                            _receiverCount[scan.receiver_id_number] = 0;
+                        }
+                        if ($scope.route_info['max_order_number_per_receiver']
+                        & _receiverCount[scan.receiver_id_number] >= $scope.route_info['max_order_number_per_receiver']) {
+                            $scope.addAlert('Loading failed with exceeded personal allowance ('
+                            + $scope.route_info['max_order_number_per_receiver'] + '): ' + scan.receiver_id_number);
+                            return;
+                        }
+                        _barcodeStorage[scan.barcode] = scan;
+                        _receiverCount[scan.receiver_id_number] += 1;
+                    }
+                    if ($scope.route_info['max_order_number_per_receiver']) {
+                        for (var receiver_id_number in _receiverCount) {
+                            if (_receiverCount.hasOwnProperty(receiver_id_number)
+                            & $scope.receiverCount.hasOwnProperty(receiver_id_number)) {
+                                if (_receiverCount[receiver_id_number] + $scope.receiverCount[receiver_id_number]
+                                > $scope.route_info['max_order_number_per_receiver']) {
+                                    $scope.addAlert('Loading failed with exceeded personal allowance ('
+                                    + $scope.route_info['max_order_number_per_receiver'] + '): ' + receiver_id_number)
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    //combine and add
+                    var scans = [];
+                    for (var i = 0, len = data.length; i < len; i++) {
+                        var scan = data[i];
+                        $scope.barcodeStorage[scan.barcode] = scan;
+                        if (!$scope.receiverCount.hasOwnProperty(scan.receiver_id_number)) {
+                            $scope.receiverCount[scan.receiver_id_number] = 0;
+                        }
+                        $scope.receiverCount[scan.receiver_id_number] += 1;
+                        scans.push(scan);
+                    }
+                    $scope.preScansList.push({name:file.name, scans:scans, visible:false});
+                }).error(function (data) {
+                    $scope.addAlert(data.message);
+                }).finally(function () {
+                    $scope.running = false;
+                });
+            }) ();
+        }
+    };
+
+    $scope.togglePreScans = function(index){
+        if (index < $scope.preScansList.length) {
+            $scope.preScansList[index].visible = !$scope.preScansList[index].visible;
         }
     };
 }]);

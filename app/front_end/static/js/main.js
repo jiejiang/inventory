@@ -31,6 +31,10 @@ window.postOrdersApp = angular.module('postOrdersApp',
         templateUrl: partialsDir + 'scan-barcode.html',
         controller: 'ScanBarcode'
     })
+    .when('/merge-excel', {
+        templateUrl: partialsDir + 'merge-excel.html',
+        controller: 'MergeExcel'
+    })
     .otherwise({redirectTo: '/batch-order'});
 }]);
 
