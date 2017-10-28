@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-from markupsafe import Markup
 
 __author__ = 'jie'
 
-from flask import redirect, url_for, flash
+import os, zipfile
+import pandas as pd
+from markupsafe import Markup
+from flask import redirect, url_for, flash, current_app
 from flask_admin.contrib import sqla
 from flask_admin.menu import MenuLink
 from flask_admin.model.form import InlineFormAdmin
@@ -31,10 +33,33 @@ class JobAdmin(LoginRequiredModelView):
     def _show_status(view, context, model, name):
         return model.status_string
 
+    def _show_item_count(view, context, model, name):
+        #return model.orders.count() #cannot use this because the case of order number re-use
+        job_file = os.path.join(current_app.config['DOWNLOAD_FOLDER'], model.uuid, model.uuid + '.zip')
+        if not os.path.exists(job_file):
+            return "%d (orders)" % model.orders.count()
+        try:
+            with zipfile.ZipFile(job_file) as z:
+                customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
+                    u"企业运单编号": lambda x: str(x),
+                    u"收件人省市区代码": lambda x: str(x),
+                    u"收件人电话": lambda x: str(x),
+                    u"收件人证件号码": lambda x: str(x),
+                    u"发货人省市区代码": lambda x: str(x),
+                    u"发货人电话": lambda x: str(x),
+                    u"商品备案号": lambda x: str(x),
+                    u"发货人电话": lambda x: str(x),
+                    u'计量单位': lambda x: str(x),
+                })
+                return len(customs_df.index)
+        except Exception, inst:
+            return "%d (orders)" % model.orders.count()
+
     column_formatters = {
         'status': _show_status,
         'creation_time': lambda v, c, m, p: time_format(m.creation_time),
         'completion_time': lambda v, c, m, p: time_format(m.completion_time),
+        'item_count': _show_item_count,
     }
 
 class SuccessJobAdmin(JobAdmin):
@@ -42,6 +67,7 @@ class SuccessJobAdmin(JobAdmin):
     column_searchable_list = ('uuid', 'creation_time', 'issuer')
     column_exclude_list = ('percentage', 'message')
     column_default_sort = ('completion_time', True)
+    column_list = ('uuid', 'status', 'completion_time', 'item_count', 'version', 'issuer')
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.status == Job.Status.COMPLETED)
@@ -51,6 +77,7 @@ class SuccessJobAdmin(JobAdmin):
 
 class FailedJobAdmin(JobAdmin):
     column_default_sort = ('creation_time', True)
+    column_list = ('uuid', 'status', 'creation_time', 'percentage', 'message', 'issuer')
 
     def get_query(self):
         return self.session.query(self.model).filter(or_(self.model.status == Job.Status.FAILED, self.model.status == Job.Status.DELETED))
