@@ -354,6 +354,9 @@ class ProductInfo(db.Model):
     bc_measurement_unit = db.Column(db.String(64))
     bc_second_measurement_unit = db.Column(db.String(64))
 
+    # new name
+    report_name = db.Column(db.String(128))
+
     #deprecated
     price_per_kg = db.Column(db.Float)
 

@@ -718,6 +718,20 @@ def save_customs_df(route_config, version, customs_df, package_df, output):
     else:
         raise Exception, "Unknown 'save_customs_df': %s" % route_config['save_customs_df']
 
+def map_full_name_to_report_name(data_df, column_name):
+    if not column_name in data_df.columns:
+        raise Exception, "%s not in header" % column_name
+    product_info_df = pd.read_sql_query(ProductInfo.query.filter(ProductInfo.full_name.in_(
+        tuple(set(data_df[column_name].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
+    columns_to_delete = product_info_df.columns
+    product_info_df.rename(columns={'full_name': column_name}, inplace=True)
+    data_df = pd.merge(data_df, product_info_df, on=column_name)
+    data_df[column_name] = data_df.apply(lambda row:row['report_name'] if row['report_name'] else row[column_name],
+                                         axis=1)
+    for column in columns_to_delete:
+        if column in data_df:
+            del data_df[column]
+    return data_df
 
 def retract_from_order_numbers(download_folder, order_numbers, output, route_config, retraction=None):
     route_name = route_config['name']
@@ -937,6 +951,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 if 'save_customs_df' in route_config:
                     save_customs_df(route_config, version, customs_final_df, package_final_df, output)
                 else:
+                    customs_final_df = map_full_name_to_report_name(customs_final_df, u'货物名称')
                     wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cc_header.xlsx'))
                     ws = wb["Sheet1"]
                     for r in dataframe_to_rows(customs_final_df, index=False, header=True):
