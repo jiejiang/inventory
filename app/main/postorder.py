@@ -69,6 +69,9 @@ PROVINCE_INFO_MAP = {
 
 PROVINCE_NAMES = [City.normalize_province(name) for name in PROVINCE_INFO_MAP.keys()]
 
+ADDRESS_LIMIT_FIXTURES = [u'维吾尔自治区', u'壮族自治区', u'回族自治区', u'古自治区', u'自治区', u'特别行政区', u'省', u'市',
+                          u'盟', u'县', u'区']
+
 ITEM_NAME_RE = re.compile(
     ur"^.*?((([123一二三])|([4四]))段|(\d+)g)$", flags=re.U | re.I)
 
@@ -897,6 +900,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
                 #limit the address size on 10/5/2017
                 address_limit = 24
+
                 def address_trim(address):
                     if len(address) > address_limit:
                         found = False
@@ -910,8 +914,20 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                         if len(address) > address_limit:
                             address = address[:address_limit]
                     return address
-                customs_final_df[u'收件人地址'] = customs_final_df[u'收件人地址'].apply(address_trim)
-                package_final_df[u'收件人地址'] = package_final_df[u'收件人地址'].apply(address_trim)
+
+                def address_trim_random(address):
+                    if len(address) > address_limit:
+                        for fixture in ADDRESS_LIMIT_FIXTURES:
+                            address = address.replace(fixture, '')
+                            if len(address) <= address_limit:
+                                break
+                        if len(address) > address_limit:
+                            address = "".join(
+                                [address[i] for i in sorted(random.sample(xrange(len(address)), address_limit))])
+                    return address
+
+                customs_final_df[u'收件人地址'] = customs_final_df[u'收件人地址'].apply(address_trim_random)
+                package_final_df[u'收件人地址'] = package_final_df[u'收件人地址'].apply(address_trim_random)
                 customs_final_df[u'发件人地址'] = customs_final_df[u'发件人地址'].apply(
                     lambda x: x if len(x) <= address_limit else x[:address_limit])
                 package_final_df[u'发件人地址'] = package_final_df[u'发件人地址'].apply(
