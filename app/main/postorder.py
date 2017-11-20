@@ -936,8 +936,13 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                             if len(address) <= address_limit:
                                 break
                         if len(address) > address_limit:
-                            address = "".join(
-                                [address[i] for i in sorted(random.sample(xrange(len(address)), address_limit))])
+                            cut_off = 6
+                            head = address[:cut_off]
+                            tail = address[cut_off:]
+                            tail_limit = address_limit - cut_off
+                            tail_trim = "".join(
+                                [tail[i] for i in sorted(random.sample(xrange(len(tail)), tail_limit))])
+                            address = head + tail_trim
                     return address
 
                 customs_final_df[u'收件人地址'] = customs_final_df[u'收件人地址'].apply(address_trim_random)
@@ -952,6 +957,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                     save_customs_df(route_config, version, customs_final_df, package_final_df, output)
                 else:
                     customs_final_df = map_full_name_to_report_name(customs_final_df, u'货物名称')
+                    customs_final_df.sort_values(by=[u'序号', ], inplace=True)
                     wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cc_header.xlsx'))
                     ws = wb["Sheet1"]
                     for r in dataframe_to_rows(customs_final_df, index=False, header=True):
