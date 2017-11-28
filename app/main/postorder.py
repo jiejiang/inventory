@@ -24,6 +24,7 @@ from PyPDF2 import PdfFileMerger, PdfFileReader
 from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+from flask import current_app
 
 from ..models import City, Order, ProductInfo
 from .. import db
@@ -448,6 +449,10 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None, test_m
         u'身份证号(EMS需要)': lambda x: str(x),
         u'包裹数量': lambda x: int(x),
     })
+    if 'MAX_ORDER_PER_BATCH' in current_app.config \
+            and len(in_df.index) > current_app.config['MAX_ORDER_PER_BATCH']:
+        raise Exception, u"该批次个数(%d)超过最大订单数: %d" % \
+                         (len(in_df.index), current_app.config['MAX_ORDER_PER_BATCH'])
     normalize_columns(in_df)
 
     package_columns = [u"报关单号", u'总运单号', u'袋号', u'快件单号', u'发件人', u'发件人地址',
