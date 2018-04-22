@@ -9,10 +9,8 @@ import sys
 import os
 import shutil
 import zipfile
-import codecs
 import datetime
-import string
-import random
+from cStringIO import StringIO
 from optparse import OptionParser
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
@@ -20,11 +18,12 @@ import barcode
 from barcode.writer import ImageWriter
 from weasyprint import HTML, CSS
 from wand.image import Image
-from PyPDF2 import PdfFileMerger, PdfFileReader
+from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
 from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from flask import current_app
+from pdf2image import convert_from_path, convert_from_bytes
 
 from ..models import City, Order, ProductInfo
 from .. import db
@@ -611,13 +610,57 @@ def map_full_name_to_report_name(data_df, column_name):
             del data_df[column]
     return data_df
 
+def remap_customs_df(customs_final_df):
+    wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cc_header.xlsx'))
+    ws = wb["Sheet1"]
+    row_count = 0
+    for r in dataframe_to_rows(customs_final_df, index=False, header=False):
+        row_count += 1
+        ws.append(r)
+
+    # merge cell for this one
+    base_index = 7
+    last_value = 0
+    last_row_num = None
+    columns = (1, 2, 4, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25)
+    for row_num in range(base_index, base_index + row_count):
+        rd = ws.row_dimensions[row_num]
+        rd.height = 50
+
+        is_last_row = (row_num == base_index + row_count - 1)
+
+        package_index = int(ws.cell(row=row_num, column=1).value)
+        assert (package_index > 0)
+        if last_value <= 0:
+            last_value = package_index
+            last_row_num = row_num
+        else:
+            if is_last_row or last_value != package_index:
+                if row_num > last_row_num + 1 or (is_last_row and row_num > last_row_num):
+                    start_row = last_row_num
+                    end_row = row_num if is_last_row else row_num - 1
+                    for _row_num in range(start_row, end_row):
+                        for column in columns:
+                            first_value = ws.cell(row=_row_num, column=column).value
+                            second_value = ws.cell(row=end_row, column=column).value
+                            assert ((isinstance(first_value, float) and isinstance(second_value, float) and
+                                     math.isnan(first_value) and math.isnan(second_value))
+                                    or (first_value == second_value))
+                    for column in columns:
+                        ws.merge_cells(start_row=start_row, start_column=column,
+                                       end_row=end_row, end_column=column)
+                last_value = package_index
+                last_row_num = row_num
+    return wb
+
 def retract_from_order_numbers(download_folder, order_numbers, output, route_config, retraction=None):
     route_name = route_config['name']
     route_code = route_config['code']
 
     if not output is None:
-        if not os.path.exists(output):
-            os.makedirs(output)
+        waybill_dir = os.path.join(output, u"面单")
+        if not os.path.exists(waybill_dir):
+            os.makedirs(waybill_dir)
 
     # find all jobs and job to order number map
     receiver_sig_to_order_numbers = {}
@@ -680,6 +723,31 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
                 sub_package_df = package_df[
                     package_df[u"快件单号"].isin(order_number_set)]
+
+                #output waybill
+                if output:
+                    waybills = json.load(z.open('waybills.json'))
+                    pdf_data = StringIO(z.open(u"面单.pdf").read())
+                    pdf_data.seek(0)
+                    pdf = PdfFileReader(pdf_data)
+                    page_count = pdf.getNumPages()
+                    for waybill in waybills:
+                        if waybill['tracking_no'] in order_number_set:
+                            if waybill['end_page'] > page_count or waybill['start_page'] >= page_count:
+                                raise Exception, "Waybill page length %d-%d larger than pdf length %d" % \
+                                                 (waybill['start_page'], waybill['end_page'], page_count)
+                            out_pdf = PdfFileWriter()
+                            for i in xrange(waybill['start_page'], waybill['end_page']):
+                                out_pdf.addPage(pdf.getPage(i))
+
+                            pdf_content = StringIO()
+                            out_pdf.write(pdf_content)
+                            pdf_content.seek(0)
+                            images = convert_from_bytes(pdf_content.read(), dpi=50)
+                            if images:
+                                images[0].save(os.path.join(waybill_dir, waybill['tracking_no'] + '.y.jpg'))
+                            else:
+                                raise Exception, "No jpg waybill generated for %s" % waybill['tracking_no']
             else:
                 raise Exception, "Version not supported %s" % version
 
@@ -715,50 +783,15 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
             if version == "v3":
                 customs_final_df = generate_customs_df(route_config, version, package_final_df)
 
-                wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cc_header.xlsx'))
-                ws = wb["Sheet1"]
-                row_count = 0
-                for r in dataframe_to_rows(customs_final_df, index=False, header=False):
-                    row_count += 1
-                    ws.append(r)
-
-                #merge cell for this one
-                base_index = 7
-                last_value = 0
-                last_row_num = None
-                columns = (1, 2, 4, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25)
-                for row_num in range(base_index, base_index+row_count):
-                    rd = ws.row_dimensions[row_num]
-                    rd.height = 50
-
-                    is_last_row = (row_num == base_index + row_count - 1)
-
-                    package_index = int(ws.cell(row=row_num, column=1).value)
-                    assert(package_index > 0)
-                    if last_value <= 0:
-                        last_value = package_index
-                        last_row_num = row_num
-                    else:
-                        if is_last_row or last_value != package_index:
-                            if row_num > last_row_num + 1 or (is_last_row and row_num > last_row_num):
-                                start_row = last_row_num
-                                end_row = row_num if is_last_row else row_num - 1
-                                for _row_num in range(start_row, end_row):
-                                    for column in columns:
-                                        first_value = ws.cell(row=_row_num, column=column).value
-                                        second_value = ws.cell(row=end_row, column=column).value
-                                        assert ((isinstance(first_value, float) and isinstance(second_value, float) and
-                                                 math.isnan(first_value) and math.isnan(second_value))
-                                                or (first_value == second_value))
-                                for column in columns:
-                                    ws.merge_cells(start_row=start_row, start_column=column,
-                                                   end_row=end_row, end_column=column)
-                            last_value = package_index
-                            last_row_num = row_num
+                wb = remap_customs_df(customs_final_df)
                 wb.save(os.path.join(output, u"晋江申报单.xlsx".encode('utf8')))
 
                 package_final_df.to_excel(os.path.join(
                     output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
+
+                if os.path.exists(waybill_dir):
+                    shutil.make_archive(waybill_dir, 'zip', waybill_dir)
+                shutil.rmtree(waybill_dir)
 
             else:
                 raise Exception, "Version not supported too %s" % version
