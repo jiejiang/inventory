@@ -97,6 +97,7 @@ class City(db.Model):
         return "%s[%d]" % (self.name, self.type)
 
     DISTRICTS = [u'北京', u'上海', u'重庆', u'天津']
+    DISTRICTS_FULLNAME = [x + u"市" for x in DISTRICTS]
     AUTONOMOUS_SPECIAL_REGION = {
         u'新疆' : u'新疆维吾尔自治区',
         u'广西' : u'广西壮族自治区',
@@ -106,6 +107,7 @@ class City(db.Model):
         u'香港' : u'香港特别行政区',
         u'澳门' : u'澳门特别行政区'
     }
+    AUTONOMOUS_SPECIAL_REGION_REVERSE = {v: k for k, v in AUTONOMOUS_SPECIAL_REGION.iteritems()}
     MUNICIPAL_SUFFIX_SET = set([u"市", u"县", u"区", u"盟"])
 
     @staticmethod
@@ -118,8 +120,21 @@ class City(db.Model):
             return name + u"省"
 
     @staticmethod
+    def denormalize_province(name):
+        if name in City.DISTRICTS_FULLNAME:
+            return name[:-1]
+        elif name in City.AUTONOMOUS_SPECIAL_REGION_REVERSE:
+            return City.AUTONOMOUS_SPECIAL_REGION_REVERSE[name]
+        if name.endswith(u"省"):
+            return name[:-1]
+
+    @staticmethod
     def normalize_municipality(name):
         return name + u"市" if not name[-1] in City.MUNICIPAL_SUFFIX_SET else name
+
+    @staticmethod
+    def denormalize_municipality(name):
+        return name[:-1] if name and name[-1] in City.MUNICIPAL_SUFFIX_SET else name
 
     @staticmethod
     def normalize_province_path(cities):
@@ -267,10 +282,10 @@ class Order(db.Model):
     retraction_id = db.Column(db.Integer, db.ForeignKey('retraction.id'), nullable=True)
 
     class Type:
-        YUNDA = 1
+        JIXUN = 1
 
         types = {
-            YUNDA : u"韵达单号",
+            JIXUN : u"吉讯单号",
         }
 
     def make_reusable(self):
@@ -293,7 +308,7 @@ class Order(db.Model):
 
     @staticmethod
     def is_order_number_valid(type, order_number):
-        return type == Order.Type.YUNDA and re.match(r"^\d+$", order_number)
+        return type == Order.Type.JIXUN and re.match(r"^\d+$", order_number)
 
     @staticmethod
     def pick_first(type):

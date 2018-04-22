@@ -137,10 +137,10 @@ class UnusedOrderAdmin(OrderAdmin):
     column_default_sort = ('order_number', False)
 
     def get_query(self):
-        return self.session.query(self.model).filter(self.model.used==False, self.model.type == Order.Type.YUNDA)
+        return self.session.query(self.model).filter(self.model.used==False, self.model.type == Order.Type.JIXUN)
 
     def get_count_query(self):
-        return self.session.query(func.count('*')).filter(self.model.used == False, self.model.type == Order.Type.YUNDA)
+        return self.session.query(func.count('*')).filter(self.model.used == False, self.model.type == Order.Type.JIXUN)
 
 
 class UnretractedOrderAdmin(OrderAdmin):
@@ -221,7 +221,7 @@ class RetractionAdmin(LoginRequiredModelView):
 admin.add_view(SuccessJobAdmin(Job, db.session, endpoint="admin.success_jobs", name=u"生成订单下载"))
 admin.add_view(RetractionAdmin(Retraction, db.session, endpoint="admin.success_retraction", name=u"提取订单下载"))
 admin.add_view(ProductInfoAdmin(ProductInfo, db.session, endpoint="admin.product_info", name=u"商品信息"))
-admin.add_view(UnusedOrderAdmin(Order, db.session, endpoint="admin.unused_standard_order", name=u"未使用韵达订单"))
+admin.add_view(UnusedOrderAdmin(Order, db.session, endpoint="admin.unused_standard_order", name=u"未使用吉讯订单"))
 admin.add_view(UsedOrderAdmin(Order, db.session, endpoint="admin.used_order", name=u"已生成订单"))
 admin.add_view(UnretractedOrderAdmin(Order, db.session, endpoint="admin.unretracted_order", name=u"未提取订单"))
 admin.add_view(RetractedOrderAdmin(Order, db.session, endpoint="admin.retracted_order", name=u"已提取订单"))

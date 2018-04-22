@@ -7,171 +7,90 @@
             <table>
                 <tbody>
                     <tr>
-                        <td style="width:400pt;border:none">
-                            <table>
-                                <tbody>
-                                    <tr>
-                                        <td style="width:155pt;border:none">始发网点Orig. Branch:</td>
-                                        <td style="border:none">英国</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件人Sender's Name:</td>
-                                        <td style="border:none">{{sender_name}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件人电话(Tel. #):</td>
-                                        <td style="border:none">{{sender_phone}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件公司Co. name:</td>
-                                        <td style="border:none"></td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件人地址Shipper's Add:</td>
-                                        <td style="border:none">{{sender_address}}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <td style="width:150pt; text-align: center">
+                            <img src="static/img/jixun.png" style="width:100%">
+                            <span style="font-size:120%; font-weight: bold">{{package_type}}</span>
                         </td>
-                        <td style="border:none;text-align: left">
-                            <span style="font-size:3em">{{package_type}}</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <table>
-                <tbody>
-                    <tr>
-                        <td style="width:80pt;border:none">
-                            <span style="font-size:1.3em;font-weight: bold">送达地址: Dest. Inf</span>
-                        </td>
-                        <td style="border:none">
-                            <table>
-                                <tbody style="font-weight: bold">
-                                    <tr>
-                                        <td style="width:120pt;border:none">收件人Name of Receiver:</td>
-                                        <td style="border:none; font-size: 200%">{{receiver_name}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">收件人电话Tel. #:</td>
-                                        <td style="border:none; font-size: 200%">{{receiver_mobile}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">收件公司Co. name:</td>
-                                        <td style="border:none"></td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">收件人地址<br>Add of Receiver:</td>
-                                        <td style="border:none; font-size: 200%">{{full_address}}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <table style="border: 1px solid;border-left:none;border-right:none">
-                <tbody>
-                    <tr>
-                        <td style="width:80pt;border:none;border-right: 1px solid">
-
-                        </td>
-                        <td style="border:none">
-                            <span style="font-size:{{receiver_province_city_font_size}}em">
-                                {{receiver_province}}&nbsp;{{receiver_city}}
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <table>
-                <tbody>
-                    <tr>
-                      <td style="width:150pt;border:none;text-align:left">
-                        <p>下单时间:<br>{{time.strftime('%d, %b %Y')}}</p>
-                        </td>
-                        <td style="border:none; text-align: center">
+                        <td style="padding-left: 1em; padding-right:1em; text-align: center">
                             <img src="{{top_image}}" style="width:100%">
-                        </td>
-                        <td style="width:50pt;border:none">
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <table style="border: 1px solid;border-left:none;border-right:none">
-                <tbody>
-                    <tr>
-                        <td style="width:80pt;border:none">
-                            <span>运单号码</span>
-                            <br><span>Waybill#</span>
-                        </td>
-                        <td style="border:none; text-align: center">
-                            <span style="font-size:1.5em">{{ticket_number}}</span>
+                            <span style="font-weight: bold">{{ticket_number}}</span>
                         </td>
                     </tr>
                 </tbody>
             </table>
 
-            <table style="border: 1px solid;border-left:none;border-right:none">
+            <table>
                 <tbody>
+                    <tr style="font-weight: bold">
+                        <td style="width:100px">收件人：</td>
+                        <td style="font-size: 120%">{{receiver_name}} <span style="float:right; font-size: 120%">{{receiver_mobile}}</span></td>
+                    </tr>
+                    <tr style="font-weight: bold">
+                        <td></td>
+                        <td style="font-size: 120%; height: 70px; vertical-align:top;">{{full_address}}</td>
+                    </tr>
                     <tr>
-                        <td style="width:250pt;border:none">
-                            <span>收件人/代签人</span><br>
-                            <span>Name of Sign-off</span>
-                        </td>
-                        <td style="border:none">
-                            <span>签收时间:
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日</span><br>
-                            <span>Date of Received</span>
-                        </td>
+                        <td>寄方：</td>
+                        <td>{{sender_name}} <span style="float:right">{{sender_phone}}</span></td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top;">寄方地址：</td>
+                        <td style="height: 70px; vertical-align:top;">{{sender_address}}</td>
                     </tr>
                 </tbody>
             </table>
 
-            <table style="border: 1px solid;border-left:none;border-right:none">
+            <table>
                 <tbody>
                     <tr>
-                        <td style="border:none">
-                            <table>
+                        <td style="width:150px; height: 60px">重量：{{package_weight}}</td>
+                        <td style="width:250px; border-left:2px solid">件数</td>
+                        <td>原产地</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <table style="border-top: none; width: 100%; margin-left: 3px; width: 99%">
                                 <tbody>
                                     <tr>
-                                        <td style="border:none">
-                                            <span>托寄物品简述:</span>
-                                            <span style="font-weight: bold">{{item_names}}</span>
-                                        </td>
-                                        <td style="width:100pt;border:none">
-                                            <span>订单号:</span>
-
-                                        </td>
-                                        <td style="border:none">
-                                            <span>订单编号:</span><br><span>Order#</span>
-                                        </td>
+                                        <td>内件描述：</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="height: 80px; vertical-align:top">{{item_names}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width: 450px">编号：</td>
+                                        <td style="width: 80px">年</td>
+                                        <td style="width: 85px">月</td>
+                                        <td>日</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </td>
                     </tr>
                     <tr>
-                        <td style="border:none">
-                            <table>
+                        <td>
+                            <table style="border: none">
                                 <tbody>
                                     <tr>
-                                        <td style="width:250pt;border:none">
-                                            <span>总件数:</span><br>
-                                            <span>Ttl. #Of Packages</span><br>
-                                            <span>快件类型Shipment Type:</span>
-                                        </td>
-                                        <td style="width:100pt;border:none">
-                                            <span style="border: 1px solid">&nbsp;&nbsp;&nbsp;&nbsp;</span><span>文件DOC</span>
-                                        </td>
-                                        <td style="border:none">
-                                            <span style="border: 1px solid">&nbsp;&nbsp;&nbsp;&nbsp;</span><span>包裹Parcel</span>
-                                        </td>
+                                        <td>寄方：</td>
+                                        <td>{{sender_name}} <span style="float:right">{{sender_phone}}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="vertical-align:top;">寄方地址：</td>
+                                        <td style="height: 70px; vertical-align:top;">{{sender_address}}</td>
+                                    </tr>
+                                    <tr style="font-weight: bold">
+                                        <td style="width:100px">收件人：</td>
+                                        <td style="font-size: 120%">{{receiver_name}} <span style="float:right; font-size: 120%">{{receiver_mobile}}</span></td>
+                                    </tr>
+                                    <tr style="font-weight: bold">
+                                        <td></td>
+                                        <td style="font-size: 120%; height: 70px; vertical-align:top;">{{full_address}}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -181,73 +100,19 @@
             </table>
 
             <table>
-                <tbody>
-                    <tr>
-                        <td style="width:350pt;border:none; text-align: center">
-                            <img src="{{bot_image}}" style="width:100%">
-                            <span style="font-size:1em">{{ticket_number}}</span>
-                        </td>
-                        <td style="border:none;padding-left:1em">
-                            <img src="static/img/yunda.png" style="width:100%">
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                <tr>
+                    <td colspan="2">退件地址：晋江市内坑镇陆地港国际快件中心301室</td>
+                </tr>
+                <tr>
+                    <td style="width:300pt; padding-left: 1em; padding-right:1em; text-align: center">
+                        <img src="{{bot_image}}" style="width:100%">
+                        <span style="font-weight: bold">{{ticket_number}}</span>
+                    </td>
+                    <td style="text-align: center">
+                        <span style="font-size:180%; font-weight: bold">{{package_type}}</span>
+                    </td>
 
-            <table style="border-top: 1px solid;page-break-before:always">
-                <tbody>
-                    <tr>
-                        <td style="border:none;border-right: 1px solid">
-                            <table>
-                                <tbody>
-                                    <tr>
-                                        <td style="width:150pt;border:none">始发网点Orig. Branch:</td>
-                                        <td style="border:none">英国</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件人Sender's Name:</td>
-                                        <td style="border:none">{{sender_name}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件人电话(Tel. #):</td>
-                                        <td style="border:none">{{sender_phone}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件公司Co. name:</td>
-                                        <td style="border:none"></td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">寄件人地址Shipper's Add:</td>
-                                        <td style="border:none">{{sender_address}}</td>
-                                    </tr>
-                                    <tr>
-                                        <td style="border:none">&nbsp;</td>
-                                    </tr>
-
-                                    <tr style="font-weight: bold">
-                                        <td style="border:none;padding-left:2em">收件人Name of Receiver:</td>
-                                        <td style="border:none; font-size: 200%">{{receiver_name}}</td>
-                                    </tr>
-                                    <tr style="font-weight: bold">
-                                        <td style="border:none;padding-left:2em">收件人电话Tel. #:</td>
-                                        <td style="border:none; font-size: 200%">{{receiver_mobile}}</td>
-                                    </tr>
-                                    <tr style="font-weight: bold">
-                                        <td style="border:none;padding-left:2em">收件公司Co. name:</td>
-                                        <td style="border:none"></td>
-                                    </tr>
-                                    <tr style="font-weight: bold">
-                                        <td style="border:none;padding-left:2em">收件人地址<br>Add of Receiver:</td>
-                                        <td style="border:none; font-size: 200%">{{full_address}}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </td>
-                        <td style="width:80pt;border:none">
-                            <span style="font-size:1.2em">{{item_names}}</span>
-                        </td>
-                    </tr>
-                </tbody>
+                </tr>
             </table>
 
         </div>
