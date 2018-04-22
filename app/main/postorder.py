@@ -592,6 +592,7 @@ def generate_customs_df(route_config, version, package_df):
     customs_df.sort_values(by=[u"序号", u'分运单号'], inplace=True)
 
     del customs_df["Sequence"]
+    del package_df["Sequence"]
 
     return customs_df
 
@@ -622,7 +623,7 @@ def remap_customs_df(customs_final_df):
     base_index = 7
     last_value = 0
     last_row_num = None
-    columns = (1, 2, 4, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25)
+    columns = (1, 2, 4, 15, 16, 17, 18, 19, 20, 22, 23, 24, 26)
     for row_num in range(base_index, base_index + row_count):
         rd = ws.row_dimensions[row_num]
         rd.height = 50
@@ -786,6 +787,8 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 wb = remap_customs_df(customs_final_df)
                 wb.save(os.path.join(output, u"晋江申报单.xlsx".encode('utf8')))
 
+                del package_final_df["province"]
+                del package_final_df["city"]
                 package_final_df.to_excel(os.path.join(
                     output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
 
@@ -800,29 +803,25 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
 def load_order_info(download_folder, order, route_config):
     version = order.job.version if order.job.version else "v1"
-    if version <> "v2":
+    if version <> "v3":
         raise Exception, "Error: Version"
     route_code = route_config['code']
-    product_col = u"货物名称"
+    product_col = u"内件名称"
     uuid = str(order.job.uuid)
     job_file = os.path.join(download_folder, uuid, uuid + '.zip')
     if not os.path.exists(job_file):
         raise Exception, "Error: Missing File"
     with zipfile.ZipFile(job_file) as z:
-        customs_df = pd.read_excel(z.open(u"江门申报单.xlsx"), converters={
-            u"分运单号": lambda x: str(x),
-            u"商品编码": lambda x: str(x),
-            u'申报计量单位': lambda x: str(x),
-            u'货主单位代码': lambda x: str(x),
-            u"电话号码(固话)": lambda x: str(x),
-            u"货主单位地区代码": lambda x: str(x),
-            u"收发件人证件号": lambda x: str(x),
-            u"贸易国别": lambda x: str(x),
-            u"产销国": lambda x: str(x),
-            u"发件人国别": lambda x: str(x),
+        package_df = pd.read_excel(z.open(u"机场报关单.xlsx"), index_col=0, converters={
+            u'快件单号': lambda x: str(x),
+            u'电话号码': lambda x: str(x),
+            u'电话号码.1': lambda x: str(x),
+            u'邮编': lambda x: str(x),
+            u'税号': lambda x: str(x),
+            u'备注': lambda x: str(x),
         })
-        sub_customs_df = customs_df[customs_df[u"分运单号"] == order.order_number]
-        if len(sub_customs_df.index) <= 0:
+        sub_package_df = package_df[package_df[u"快件单号"] == order.order_number]
+        if len(sub_package_df.index) <= 0:
             raise Exception, "Error: Empty Record"
 
         products_exclude = route_config['products_exclude'] if 'products_exclude' in route_config else []
@@ -830,18 +829,12 @@ def load_order_info(download_folder, order, route_config):
             for product_exclude in products_exclude:
                 product_exclude = product_exclude.strip()
                 if product_exclude:
-                    excluded = sub_customs_df[product_col].str.contains(product_exclude)
+                    excluded = sub_package_df[product_col].str.contains(product_exclude)
                     if excluded.any():
                         raise Exception, "Error: Product Excluded"
-        pieces = sub_customs_df[u"件数"].sum()
+        pieces = sub_package_df[u"数量"].sum()
 
-        #hard coded checks
-        if route_code == 'bc' and pieces == 4:
-            if sub_customs_df[product_col].str.contains(u"段|奶粉").any(): #check if is milk poweder
-                if not sub_customs_df[product_col].str.contains(u"1段").any(): #if so should always contains stage 1
-                    raise Exception, "Error: Stage 1 Milk Powder Not Found"
-
-    return sub_customs_df, pieces
+    return sub_package_df, pieces
 
 if __name__ == "__main__":
     parser = OptionParser()

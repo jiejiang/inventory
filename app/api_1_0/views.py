@@ -215,22 +215,22 @@ class RetractionAPI(Resource):
                         raise Exception, u"uuid目录已用:%s" % retraction.uuid
                     os.makedirs(outdir)
 
-                customs_df, package_df = retract_from_order_numbers(current_app.config['DOWNLOAD_FOLDER'], order_numbers, tmpdir, route_config,
+                package_df = retract_from_order_numbers(current_app.config['DOWNLOAD_FOLDER'], order_numbers, tmpdir, route_config,
                                            retraction)
                 if dryrun:
                     def join_func(row):
                         receiver = row[u'收件人'].unique()
                         assert (len(receiver) == 1)
-                        id_number = row[u'收发件人证件号'].unique()
+                        id_number = row[u'备注'].unique()
                         assert (len(id_number) == 1)
                         return pd.Series({
-                            'message': '%s Pieces, OK' % row[u"件数"].sum(), 'receiver_name': receiver[0],
+                            'message': '%s Pieces, OK' % row[u"数量"].sum(), 'receiver_name': receiver[0],
                             'receiver_id_number': id_number[0],
-                            'detail': "/".join(map(lambda x: "%s(%s)" % (x[0], x[1]), zip(row[u"货物名称"], row[u"件数"]))),
+                            'detail': "/".join(map(lambda x: "%s(%s)" % (x[0], x[1]), zip(row[u"内件名称"], row[u"数量"]))),
                         })
 
-                    extract_df = customs_df[[u'分运单号', u'件数', u'货物名称', u'收件人', u'收发件人证件号']]\
-                        .groupby(u'分运单号').apply(join_func)
+                    extract_df = package_df[[u'快件单号', u'数量', u'内件名称', u'收件人', u'备注']]\
+                        .groupby(u'快件单号').apply(join_func)
                     extract_df['barcode'] = extract_df.index
 
                     return wrap_json_response(json.loads(extract_df.to_json(orient='records')))
@@ -360,8 +360,8 @@ class OrderInfoAPI(Resource):
             order_df, pieces = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
             info['detail'] = "/".join(
                 map(lambda x:"%s(%s)" % (x[0], x[1]),
-                    zip(order_df[u"货物名称"].map(lambda x:str(x)).tolist(),
-                        order_df[u"件数"].map(lambda x:str(x)).tolist())))
+                    zip(order_df[u"内件名称"].map(lambda x:str(x)).tolist(),
+                        order_df[u"数量"].map(lambda x:str(x)).tolist())))
             info['message'] = "%d Pieces, OK" % pieces
             info['receiver_name'] = order.receiver_name
             info['receiver_id_number'] = order.receiver_id_number
