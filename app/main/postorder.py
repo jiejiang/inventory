@@ -559,13 +559,13 @@ def generate_customs_df(route_config, version, package_df):
     for column, p_column in product_info_columns:
         customs_df[column] = customs_df[p_column]
 
-    def bc_business_column_filter(row):
+    def customs_column_filter(row):
         name = row[u"货物品名"] if pd.isnull(row["report_name"]) else row["report_name"]
-        row[u"货物品名"] = "%s*%d%s" % (name, row[u"数量"], row["billing_unit"])
+        row[u"货物品名"] = "%s*%d" % (name, row[u"数量"])
         row[u"数量"] = row[u"数量"] * row["unit_per_item"]
         return row
 
-    customs_df = customs_df.apply(bc_business_column_filter, axis=1)
+    customs_df = customs_df.apply(customs_column_filter, axis=1)
 
     for column in columns_to_delete:
         if column in customs_df:
