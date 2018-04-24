@@ -637,7 +637,7 @@ def remap_customs_df(customs_final_df):
             last_row_num = row_num
         else:
             if is_last_row or last_value != package_index:
-                if row_num > last_row_num + 1 or (is_last_row and row_num > last_row_num):
+                if row_num > last_row_num + 1:
                     start_row = last_row_num
                     end_row = row_num if is_last_row else row_num - 1
                     for _row_num in range(start_row, end_row):
