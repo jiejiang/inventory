@@ -586,7 +586,7 @@ def generate_customs_df(route_config, version, package_df):
     customs_df[u"货币编码"] = "RMB"
     customs_df[u"国别代码"] = "303"
     customs_df[u"原产国"] = u"英国"
-    customs_df[u"FROM"] = "Lon"
+    customs_df[u"FROM"] = "Man"
 
     #sort
     customs_df.sort_values(by=[u"序号", u'分运单号'], inplace=True)
@@ -746,7 +746,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                             pdf_content.seek(0)
                             images = convert_from_bytes(pdf_content.read(), dpi=50)
                             if images:
-                                images[0].save(os.path.join(waybill_dir, waybill['tracking_no'] + '.y.jpg'))
+                                images[0].save(os.path.join(waybill_dir, waybill['tracking_no'] + '.y.jpg.jpg'))
                             else:
                                 raise Exception, "No jpg waybill generated for %s" % waybill['tracking_no']
             else:
