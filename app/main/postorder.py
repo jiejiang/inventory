@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import cStringIO, json
-
-__author__ = 'jie'
-
-import re, math
+import re, math, random
 import sys
 import os
 import shutil
@@ -18,12 +15,14 @@ import barcode
 from barcode.writer import ImageWriter
 from weasyprint import HTML, CSS
 from wand.image import Image
+from wand.color import Color
 from PyPDF2 import PdfFileMerger, PdfFileReader, PdfFileWriter
 from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from flask import current_app
 from pdf2image import convert_from_path, convert_from_bytes
+from faker import Faker
 
 from ..models import City, Order, ProductInfo
 from .. import db
@@ -205,6 +204,65 @@ class NoTextImageWriter(ImageWriter):
 
     def _paint_text(self, xpos, ypos):
         pass
+
+def random_date():
+    now = datetime.datetime.now()
+    start = now + datetime.timedelta(days=-60)
+    end = now + datetime.timedelta(days=-30)
+    delta = end - start
+    int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
+    random_second = random.randrange(int_delta)
+    candidate = start + datetime.timedelta(seconds=random_second)
+    if 8 <= candidate.hour <= 18:
+        pass
+    else:
+        candidate = candidate.replace(hour=random.randrange(8, 18))
+    return candidate
+
+def generate_tickets(ticket_info, ticket_dir):
+    item_column = ticket_info['item_column']
+    count_column = ticket_info['count_column']
+    price_column = ticket_info['price_column']
+    faker = Faker()
+
+    def format_number(x):
+        if isinstance(x, float) or isinstance(x, int):
+            return "%.2f" % x
+        return map(lambda x:"%.2f" % x, x)
+
+    for name, group in ticket_info['groups']:
+        filename = os.path.join(ticket_dir, name + '.x.jpg.jpg')
+        env = Environment(loader=FileSystemLoader('templates'))
+        template = env.get_template('ticket.html')
+
+        total = 0
+        for price, count in zip(group[price_column], group[count_column]):
+            total += price * count
+
+        paid = int(math.ceil(total / 10.0)) * 10
+        change = paid - total
+
+        context = {
+            'image': 'static/img/tickets/ASDA-1.jpg',
+            'breakdown': zip(group[item_column], group[count_column], format_number(group[price_column])),
+            'total': format_number(total),
+            'paid': format_number(paid),
+            'change': format_number(change),
+            'points': int(total * 100),
+            'timestamp': random_date(),
+            'serial_number': faker.ean(length=13),
+        }
+
+        output_from_parsed_template = template.render(context)
+
+        png_data = HTML(string=output_from_parsed_template, base_url='.').write_png(
+            stylesheets=["static/css/ticket_style.css"], resolution=150)
+
+        im = Image(blob=png_data)
+        im.trim(Color('white'))
+        im.format = 'jpeg'
+        im.trim(Color('black'))
+        im.save(filename=filename)
 
 
 def generate_pdf(ticket_number, filename, context, tmpdir):
@@ -556,7 +614,12 @@ def generate_customs_df(route_config, version, package_df):
             raise Exception, u"如下商品的注册信息未包含必须字段[%s]: %s" % \
                              (column, ", ".join(product_name_null_valued))
 
-    ticket_groups = customs_df[[u'分运单号', u'货物品名', "unit_per_item"]].groupby(u'分运单号')
+    ticket_info = {
+        'groups': customs_df[[u'分运单号', u'货物品名', u'数量', "unit_per_item"]].groupby(u'分运单号'),
+        'item_column': u'货物品名',
+        'count_column': u'数量',
+        'price_column': "unit_per_item",
+    }
 
     for column, p_column in product_info_columns:
         customs_df[column] = customs_df[p_column]
@@ -596,7 +659,7 @@ def generate_customs_df(route_config, version, package_df):
     del customs_df["Sequence"]
     del package_df["Sequence"]
 
-    return customs_df, ticket_groups
+    return customs_df, ticket_info
 
 def map_full_name_to_report_name(data_df, column_name):
     if not column_name in data_df.columns:
@@ -639,7 +702,6 @@ def remap_customs_df(customs_final_df):
             last_row_num = row_num
         else:
             if is_last_row or last_value != package_index:
-                print row_num, last_row_num, last_value, package_index
                 if row_num > last_row_num + 1 or (is_last_row and row_num > last_row_num and last_value == package_index):
                     start_row = last_row_num
                     end_row = row_num if is_last_row else row_num - 1
@@ -663,8 +725,11 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
     if not output is None:
         waybill_dir = os.path.join(output, u"面单")
+        ticket_dir = os.path.join(output, u"小票")
         if not os.path.exists(waybill_dir):
             os.makedirs(waybill_dir)
+        if not os.path.exists(ticket_dir):
+            os.makedirs(ticket_dir)
 
     # find all jobs and job to order number map
     receiver_sig_to_order_numbers = {}
@@ -785,10 +850,9 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
         if output:
             if version == "v3":
-                customs_final_df, ticket_groups = generate_customs_df(route_config, version, package_final_df)
+                customs_final_df, ticket_info = generate_customs_df(route_config, version, package_final_df)
 
-                #for name, group in ticket_groups:
-                #    print group
+                generate_tickets(ticket_info, ticket_dir)
 
                 wb = remap_customs_df(customs_final_df)
                 wb.save(os.path.join(output, u"晋江申报单.xlsx".encode('utf8')))
@@ -801,6 +865,9 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 if os.path.exists(waybill_dir):
                     shutil.make_archive(waybill_dir, 'zip', waybill_dir)
                 shutil.rmtree(waybill_dir)
+                if os.path.exists(ticket_dir):
+                    shutil.make_archive(ticket_dir, 'zip', ticket_dir)
+                shutil.rmtree(ticket_dir)
 
             else:
                 raise Exception, "Version not supported too %s" % version
