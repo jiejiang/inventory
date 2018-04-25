@@ -2,7 +2,7 @@
     <head>
          <link rel="help" href="http://www.w3.org/TR/CSS21/tables.html#table-layout">
     </head>
-    <body>
+    <body style="font-family: 'DejaVu Serif' !important;">
         <div>
             <table>
                 <tbody>
@@ -13,7 +13,7 @@
                     </tr>
                 </tbody>
             </table>
-            <table style="margin-top: 20px; margin-bottom: 10px">
+            <table style="margin-top: 10px; margin-bottom: 5px">
                 <tbody>
                     <tr>
                         <td style="width:70%; text-align:right"></td>
@@ -29,7 +29,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <table style="margin-bottom: 20px; border-bottom: 1px dashed">
+            <table style="margin-bottom: 20px">
                 <tbody>
                     <tr>
                         <td style="width:70%; text-align:right">Total</td>
@@ -45,25 +45,24 @@
                     </tr>
                 </tbody>
             </table>
-            <table>
+            <table style="margin-bottom: 20px; text-align:center">
                 <tbody>
                     <tr>
-                        <td>Total points:</td>
-                        <td style="text-align:right">{{points}}</td>
-                    </tr>
-                    <tr>
-                        <td>Date:</td>
-                        <td style="text-align:right">{{timestamp.strftime('%d/%m/%Y')}}</td>
+                        <td>No. ITEMS SOLD {{total_items}}</td>
                     </tr>
                 </tbody>
             </table>
-            <table style="margin-top: 40px; text-align:center">
+            <table style="margin-bottom: 20px; text-align:center">
                 <tbody>
                     <tr>
-                        <td>{{serial_number}}</td>
+                        <td>TC# {{serial_number}}</td>
                     </tr>
+                </tbody>
+            </table>
+            <table style="text-align:center">
+                <tbody>
                     <tr>
-                        <td>{{timestamp.strftime('%d/%m/%Y %H:%M')}}</td>
+                        <td>{{timestamp.strftime('%d/%m/%Y %H:%M:%S')}}</td>
                     </tr>
                 </tbody>
             </table>

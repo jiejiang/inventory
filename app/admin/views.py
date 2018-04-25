@@ -184,7 +184,8 @@ class ProductInfoAdmin(LoginRequiredModelView):
                          billing_unit_code=u"计费单位代码", unit_per_item=u"单个物品申报数量", specification=u"规格/型号",
                          bc_product_code=u"BC商品编码", bc_specification=u"BC商品规格型号",
                          bc_second_quantity=u"BC第二数量", bc_measurement_unit=u"BC计量单位",
-                         bc_second_measurement_unit=u"BC第二计量单位", report_name=u"报单中显示名称")
+                         bc_second_measurement_unit=u"BC第二计量单位", report_name=u"报单中显示名称",
+                         ticket_name=u"小票名称", ticket_price=u"小票单价")
     can_view_details = True
     column_default_sort = ('name', False)
     column_searchable_list = ('name', 'full_name', 'report_name')

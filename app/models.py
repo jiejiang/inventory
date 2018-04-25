@@ -372,6 +372,10 @@ class ProductInfo(db.Model):
     # new name
     report_name = db.Column(db.String(128))
 
+    # tickets
+    ticket_name = db.Column(db.String(128))
+    ticket_price = db.Column(db.Float)
+
     #deprecated
     price_per_kg = db.Column(db.Float)
 

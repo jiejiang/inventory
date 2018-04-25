@@ -219,6 +219,29 @@ def random_date():
         candidate = candidate.replace(hour=random.randrange(8, 18))
     return candidate
 
+TICKET_SELECTIONS = [
+    {
+        'template': 'tickets/tesco.html',
+        'images': ['static/img/tickets/TESCO-1.jpg', 'static/img/tickets/TESCO-2.jpg'],
+        'serial_number_len': 13
+    },
+    {
+        'template': 'tickets/asda.html',
+        'images': ['static/img/tickets/ASDA-1.jpg',],
+        'serial_number_len': 13
+    },
+    {
+        'template': 'tickets/morrisons.html',
+        'images': ['static/img/tickets/Morrisons-1.jpg', 'static/img/tickets/Morrisons-2.jpg', ],
+        'serial_number_len': 13
+    },
+    {
+        'template': 'tickets/quality_safe.html',
+        'images': ['static/img/tickets/QualitySafe-1.jpg', 'static/img/tickets/QualitySafe-2.jpg', ],
+        'serial_number_len': 8
+    },
+]
+
 def generate_tickets(ticket_info, ticket_dir):
     item_column = ticket_info['item_column']
     count_column = ticket_info['count_column']
@@ -230,28 +253,36 @@ def generate_tickets(ticket_info, ticket_dir):
             return "%.2f" % x
         return map(lambda x:"%.2f" % x, x)
 
+    def random_context(selections):
+        supermarket = random.choice(selections)
+        supermarket['image'] = random.choice(supermarket['images'])
+        return supermarket
+
     for name, group in ticket_info['groups']:
         filename = os.path.join(ticket_dir, name + '.x.jpg.jpg')
         env = Environment(loader=FileSystemLoader('templates'))
-        template = env.get_template('ticket.html')
 
         total = 0
+        total_items = 0
         for price, count in zip(group[price_column], group[count_column]):
             total += price * count
+            total_items += count
 
         paid = int(math.ceil(total / 10.0)) * 10
         change = paid - total
 
-        context = {
-            'image': 'static/img/tickets/ASDA-1.jpg',
+        context = random_context(TICKET_SELECTIONS)
+        context.update({
             'breakdown': zip(group[item_column], group[count_column], format_number(group[price_column])),
             'total': format_number(total),
             'paid': format_number(paid),
             'change': format_number(change),
             'points': int(total * 100),
             'timestamp': random_date(),
-            'serial_number': faker.ean(length=13),
-        }
+            'serial_number': faker.ean(length=context['serial_number_len']),
+            'total_items': total_items,
+        })
+        template = env.get_template(context['template'])
 
         output_from_parsed_template = template.render(context)
 
@@ -606,7 +637,10 @@ def generate_customs_df(route_config, version, package_df):
                             (u"个人完税税号", "tax_code"),
                             (u"型号", "specification")]
     # check if any is empty
-    for column, _column in product_info_columns + [(u"单个物品申报数量", "unit_per_item")]:
+    for column, _column in product_info_columns \
+            + [(u"单个物品申报数量", "unit_per_item"),
+               (u"小票名称", "ticket_name"),
+               (u"小票价格", "ticket_price")]:
         null_valued = pd.isnull(customs_df[_column])
         if null_valued.any():
             product_name_null_valued = customs_df[null_valued][u'货物品名'].drop_duplicates() \
@@ -615,10 +649,10 @@ def generate_customs_df(route_config, version, package_df):
                              (column, ", ".join(product_name_null_valued))
 
     ticket_info = {
-        'groups': customs_df[[u'分运单号', u'货物品名', u'数量', "unit_per_item"]].groupby(u'分运单号'),
-        'item_column': u'货物品名',
+        'groups': customs_df[[u'分运单号', "ticket_name", u'数量', "ticket_price"]].groupby(u'分运单号'),
+        'item_column': 'ticket_name',
         'count_column': u'数量',
-        'price_column': "unit_per_item",
+        'price_column': 'ticket_price',
     }
 
     for column, p_column in product_info_columns:

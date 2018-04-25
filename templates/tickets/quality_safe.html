@@ -1,0 +1,76 @@
+<html>
+    <head>
+         <link rel="help" href="http://www.w3.org/TR/CSS21/tables.html#table-layout">
+    </head>
+    <body style="font-family: Helvetica !important;">
+        <div>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <img src="{{image}}" style="width:100%">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 20px; margin-bottom: 10px">
+                <tbody>
+                    <tr>
+                        <td style="width:70%; text-align:right"></td>
+                        <td style="text-align:right"></td>
+                    </tr>
+                    {% for item, count, price in breakdown %}
+                        {% for n in range(count) %}
+                            <tr>
+                                <td style="">{{item}}</td>
+                                <td style="text-align:right">&pound;{{price}}</td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            <table style="margin-bottom: 20px; border-bottom: 1px dashed">
+                <tbody>
+                    <tr>
+                        <td style="width:70%; text-align:right">Total</td>
+                        <td style="text-align:right">&pound;{{total}}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:right">Cash</td>
+                        <td style="text-align:right">&pound;{{paid}}</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:right">Change Due</td>
+                        <td style="text-align:right">&pound;{{change}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Total points:</td>
+                        <td style="text-align:right">{{points}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Date:</td>
+                        <td style="text-align:center">{{timestamp.strftime('%d/%m/%Y')}}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table style="margin-top: 40px; text-align:center">
+                <tbody>
+                    <tr>
+                        <td>{{serial_number}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{timestamp.strftime('%d/%m/%Y %H:%M')}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>
