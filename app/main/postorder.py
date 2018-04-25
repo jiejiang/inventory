@@ -556,6 +556,8 @@ def generate_customs_df(route_config, version, package_df):
             raise Exception, u"如下商品的注册信息未包含必须字段[%s]: %s" % \
                              (column, ", ".join(product_name_null_valued))
 
+    ticket_groups = customs_df[[u'分运单号', u'货物品名', "unit_per_item"]].groupby(u'分运单号')
+
     for column, p_column in product_info_columns:
         customs_df[column] = customs_df[p_column]
 
@@ -594,7 +596,7 @@ def generate_customs_df(route_config, version, package_df):
     del customs_df["Sequence"]
     del package_df["Sequence"]
 
-    return customs_df
+    return customs_df, ticket_groups
 
 def map_full_name_to_report_name(data_df, column_name):
     if not column_name in data_df.columns:
@@ -637,7 +639,8 @@ def remap_customs_df(customs_final_df):
             last_row_num = row_num
         else:
             if is_last_row or last_value != package_index:
-                if row_num > last_row_num + 1:
+                print row_num, last_row_num, last_value, package_index
+                if row_num > last_row_num + 1 or (is_last_row and row_num > last_row_num and last_value == package_index):
                     start_row = last_row_num
                     end_row = row_num if is_last_row else row_num - 1
                     for _row_num in range(start_row, end_row):
@@ -782,7 +785,10 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
         if output:
             if version == "v3":
-                customs_final_df = generate_customs_df(route_config, version, package_final_df)
+                customs_final_df, ticket_groups = generate_customs_df(route_config, version, package_final_df)
+
+                #for name, group in ticket_groups:
+                #    print group
 
                 wb = remap_customs_df(customs_final_df)
                 wb.save(os.path.join(output, u"晋江申报单.xlsx".encode('utf8')))
