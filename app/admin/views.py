@@ -12,6 +12,7 @@ from flask_admin.model.form import InlineFormAdmin
 from sqlalchemy import func, desc, or_
 from flask_user import current_user
 from flask_admin.actions import action
+from wtforms.validators import ValidationError
 
 from .. import db
 from . import admin
@@ -205,6 +206,14 @@ class ProductInfoAdmin(LoginRequiredModelView):
                 model.full_name = form.full_name.object_data
         else:
             model.full_name = "".join(model.full_name.strip().split())
+
+    def ticket_name_max_length(form, field):
+        if len(field.data) > 30:
+            raise ValidationError(u"小票名称最长30字符")
+
+    form_args = dict(
+        ticket_name=dict(validators=[ticket_name_max_length])
+    )
 
 
 class RetractionAdmin(LoginRequiredModelView):
