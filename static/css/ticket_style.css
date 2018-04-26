@@ -15,7 +15,7 @@ img { image-resolution: 600dpi }
 /* Default font settings.
    The font-size percentage is of 16px. (0.75 * 16px = 12px) */
 html {
-    font-size: 0.8em;
+    font-size: 0.6em;
     border: 1px solid;
 }
 body {
