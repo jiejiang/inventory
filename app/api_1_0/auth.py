@@ -1,9 +1,9 @@
 
-from flask.ext import restful
+import flask_restful as restful
 from app import user_manager
 from functools import wraps
 from flask import current_app, request
-from flask.ext.login import current_user
+from flask_login import current_user
 
 def _call_or_get(function_or_property):
     return function_or_property() if callable(function_or_property) else function_or_property

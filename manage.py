@@ -8,7 +8,8 @@ from flask_migrate import Migrate, MigrateCommand
 
 from app import db
 from app.models import City, Order
-from app.main.postorder import xls_to_orders, read_order_numbers, retract_from_order_numbers
+from app.main.postorder import xls_to_orders, read_order_numbers, retract_from_order_numbers, \
+    generate_tickets_from_mapping_file
 
 def make_shell_context():
     return dict(app=app, db=db)
@@ -65,6 +66,14 @@ if __name__ == '__main__':
             import traceback
             traceback.print_exc(sys.stderr)
             print >> sys.stderr, inst.message.encode('utf-8')
+
+    @manager.command
+    def gen_tickets(input_xlsx, mapping_xlsx, output_dir):
+        try:
+            generate_tickets_from_mapping_file(input_xlsx, mapping_xlsx, output_dir)
+        except Exception, inst:
+            import traceback
+            traceback.print_exc(sys.stderr)
 
     @manager.command
     def insert_range(type, first, last, commit):

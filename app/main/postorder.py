@@ -242,7 +242,72 @@ TICKET_SELECTIONS = [
     },
 ]
 
-def generate_tickets(ticket_info, ticket_dir):
+def generate_tickets_from_mapping_file(input_xlsx, mapping_xlsx, output_dir):
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    if os.path.isdir(input_xlsx):
+        input_xlsxs = map(lambda x:os.path.join(input_xlsx, x),
+                          filter(lambda x:x.lower().endswith('.xlsx'), os.listdir(input_xlsx)))
+
+    else:
+        input_xlsxs = [input_xlsx]
+    input_dfs = [pd.read_excel(input_xlsx, skiprows=[0, ], converters={
+        u'分运单号': lambda x: str(x),
+        u'货物名称': lambda x: str(x),
+    }) for input_xlsx in input_xlsxs]
+
+    input_df = pd.concat(input_dfs)
+
+    print >> sys.stderr, "%d total tracking numbers" % len(input_df[u'分运单号'].drop_duplicates().index)
+
+    mapping_df = pd.read_excel(mapping_xlsx, converters={
+        u'货物名称': lambda x: str(x),
+        u'小票名称': lambda x: str(x),
+        u'小票价格': lambda x: float(x),
+    })
+    duplicates = mapping_df.groupby(u'货物名称').filter(lambda x: len(x) > 1).drop_duplicates(subset=u'货物名称')
+    if len(duplicates) > 0:
+        print >> sys.stderr, duplicates
+        raise Exception, "duplicates"
+
+    combined_df = pd.merge(input_df, mapping_df, on=u'货物名称', how='left')
+    unregisted_products = set()
+    for column in (u"小票名称", u"小票价格"):
+        null_valued = pd.isnull(combined_df[column])
+        if null_valued.any():
+            product_name_null_valued = combined_df[null_valued][u'货物名称'].drop_duplicates() \
+                .map(lambda x: str(x)).tolist()
+            unregisted_products |= set(product_name_null_valued)
+    if len(unregisted_products) > 0:
+        with open(os.path.join(output_dir, 'products.txt'), 'w') as f:
+            for product in sorted(unregisted_products):
+                print >> f, product
+        raise Exception, "contains unregisted product"
+
+    for input_xlsx, input_df in zip(input_xlsxs, input_dfs):
+        print >> sys.stderr, "processing: ", input_xlsx
+        print >> sys.stderr, "%d tracking numbers" % len(input_df[u'分运单号'].drop_duplicates().index)
+        combined_df = pd.merge(input_df, mapping_df, on=u'货物名称', how='left')
+
+        ticket_info = {
+            'groups': combined_df[[u'分运单号', u"小票名称", u'件数', u"小票价格"]].groupby(u'分运单号'),
+            'item_column': u"小票名称",
+            'count_column': u'件数',
+            'price_column': u"小票价格",
+        }
+
+        ticket_dir = os.path.join(output_dir, os.path.splitext(os.path.basename(input_xlsx))[0])
+        if not os.path.exists(ticket_dir):
+            os.makedirs(ticket_dir)
+
+        generate_tickets(ticket_info, ticket_dir, suffix='.jpg')
+
+        if os.path.exists(ticket_dir):
+            shutil.make_archive(ticket_dir, 'zip', ticket_dir)
+        shutil.rmtree(ticket_dir)
+
+def generate_tickets(ticket_info, ticket_dir, suffix='.x.jpg.jpg'):
     item_column = ticket_info['item_column']
     count_column = ticket_info['count_column']
     price_column = ticket_info['price_column']
@@ -258,8 +323,9 @@ def generate_tickets(ticket_info, ticket_dir):
         supermarket['image'] = random.choice(supermarket['images'])
         return supermarket
 
+    generated_count = 0
     for name, group in ticket_info['groups']:
-        filename = os.path.join(ticket_dir, name + '.x.jpg.jpg')
+        filename = os.path.join(ticket_dir, name + suffix)
         env = Environment(loader=FileSystemLoader('templates'))
 
         total = 0
@@ -294,6 +360,9 @@ def generate_tickets(ticket_info, ticket_dir):
         im.format = 'jpeg'
         im.trim(Color('black'))
         im.save(filename=filename)
+        generated_count += 1
+
+    print >> sys.stderr, "%d tickets generated" % generated_count
 
 
 def generate_pdf(ticket_number, filename, context, tmpdir):
@@ -603,7 +672,8 @@ def generate_customs_df(route_config, version, package_df):
 
     package_df["Sequence"] = range(1, len(package_df.index) + 1)
 
-    customs_columns = [u'序号', u'分运单号', u'货物品名', u'件数', u'重量', u'数量', u'单位',
+    customs_columns = [u'序号', u'分运单号', u'货物品名', u'件数', u'提单重量', u'派送重量',
+                       u'数量', u'实际数量', u'单位',
                        u'货币编码', u'单价', u'个人完税税号', u'型号', u'国别代码', u'原产国',
                        u'HS编码', u'收件人ID', u'收件人', u'地址', u'收件人电话', u'TO',
                        u'落地配单号', u'寄件人公司', u'寄件人', u'寄件人地址', u'寄件人电话',
@@ -611,8 +681,9 @@ def generate_customs_df(route_config, version, package_df):
     customs_df = pd.DataFrame([], columns=customs_columns)
     for column, p_column in ((u'分运单号', u'快件单号'),
                              (u'货物品名', u'内件名称'),
-                             (u'重量', u'毛重（KG）'),
+                             (u'提单重量', u'毛重（KG）'),
                              (u'数量', u'数量'),
+                             (u'实际数量', u'数量'),
                              (u'收件人ID', u'备注'),
                              (u'收件人', u'收件人'),
                              (u'地址', u'收件人地址'),
@@ -622,7 +693,7 @@ def generate_customs_df(route_config, version, package_df):
                              (u'寄件人', u'发件人'),
                              (u'寄件人地址', u'发件人地址'),
                              (u'寄件人电话', u'电话号码'),
-                             (u'货主城市', u'city'),
+                             (u'货主城市', u'province'),
                              ("Sequence", "Sequence")):
         customs_df[column] = package_df[p_column]
 
@@ -649,9 +720,9 @@ def generate_customs_df(route_config, version, package_df):
                              (column, ", ".join(product_name_null_valued))
 
     ticket_info = {
-        'groups': customs_df[[u'分运单号', "ticket_name", u'数量', "ticket_price"]].groupby(u'分运单号'),
+        'groups': customs_df[[u'分运单号', "ticket_name", u'实际数量', "ticket_price"]].groupby(u'分运单号'),
         'item_column': 'ticket_name',
-        'count_column': u'数量',
+        'count_column': u'实际数量',
         'price_column': 'ticket_price',
     }
 
@@ -660,8 +731,8 @@ def generate_customs_df(route_config, version, package_df):
 
     def customs_column_filter(row):
         name = row[u"货物品名"] if pd.isnull(row["report_name"]) else row["report_name"]
-        row[u"货物品名"] = "%s*%d" % (name, row[u"数量"])
-        row[u"数量"] = row[u"数量"] * row["unit_per_item"]
+        row[u"货物品名"] = "%s*%d" % (name, row[u"实际数量"])
+        row[u"数量"] = row[u"实际数量"] * row["unit_per_item"]
         return row
 
     customs_df = customs_df.apply(customs_column_filter, axis=1)
@@ -720,37 +791,37 @@ def remap_customs_df(customs_final_df):
 
     # merge cell for this one
     base_index = 7
-    last_value = 0
-    last_row_num = None
-    columns = (1, 2, 4, 15, 16, 17, 18, 19, 20, 22, 23, 24, 26)
+    # last_value = 0
+    # last_row_num = None
+    # columns = (1, 2, 4, 15, 16, 17, 18, 19, 20, 22, 23, 24, 26)
     for row_num in range(base_index, base_index + row_count):
         rd = ws.row_dimensions[row_num]
         rd.height = 50
 
-        is_last_row = (row_num == base_index + row_count - 1)
-
-        package_index = int(ws.cell(row=row_num, column=1).value)
-        assert (package_index > 0)
-        if last_value <= 0:
-            last_value = package_index
-            last_row_num = row_num
-        else:
-            if is_last_row or last_value != package_index:
-                if row_num > last_row_num + 1 or (is_last_row and row_num > last_row_num and last_value == package_index):
-                    start_row = last_row_num
-                    end_row = row_num if is_last_row else row_num - 1
-                    for _row_num in range(start_row, end_row):
-                        for column in columns:
-                            first_value = ws.cell(row=_row_num, column=column).value
-                            second_value = ws.cell(row=end_row, column=column).value
-                            assert ((isinstance(first_value, float) and isinstance(second_value, float) and
-                                     math.isnan(first_value) and math.isnan(second_value))
-                                    or (first_value == second_value))
-                    for column in columns:
-                        ws.merge_cells(start_row=start_row, start_column=column,
-                                       end_row=end_row, end_column=column)
-                last_value = package_index
-                last_row_num = row_num
+        # is_last_row = (row_num == base_index + row_count - 1)
+        #
+        # package_index = int(ws.cell(row=row_num, column=1).value)
+        # assert (package_index > 0)
+        # if last_value <= 0:
+        #     last_value = package_index
+        #     last_row_num = row_num
+        # else:
+        #     if is_last_row or last_value != package_index:
+        #         if row_num > last_row_num + 1 or (is_last_row and row_num > last_row_num and last_value == package_index):
+        #             start_row = last_row_num
+        #             end_row = row_num if is_last_row else row_num - 1
+        #             for _row_num in range(start_row, end_row):
+        #                 for column in columns:
+        #                     first_value = ws.cell(row=_row_num, column=column).value
+        #                     second_value = ws.cell(row=end_row, column=column).value
+        #                     assert ((isinstance(first_value, float) and isinstance(second_value, float) and
+        #                              math.isnan(first_value) and math.isnan(second_value))
+        #                             or (first_value == second_value))
+        #             for column in columns:
+        #                 ws.merge_cells(start_row=start_row, start_column=column,
+        #                                end_row=end_row, end_column=column)
+        #         last_value = package_index
+        #         last_row_num = row_num
     return wb
 
 def retract_from_order_numbers(download_folder, order_numbers, output, route_config, retraction=None):
