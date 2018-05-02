@@ -681,7 +681,7 @@ def generate_customs_df(route_config, version, package_df):
     customs_df = pd.DataFrame([], columns=customs_columns)
     for column, p_column in ((u'分运单号', u'快件单号'),
                              (u'货物品名', u'内件名称'),
-                             (u'提单重量', u'毛重（KG）'),
+                             (u'派送重量', u'毛重（KG）'),
                              (u'数量', u'数量'),
                              (u'实际数量', u'数量'),
                              (u'收件人ID', u'备注'),
@@ -757,6 +757,7 @@ def generate_customs_df(route_config, version, package_df):
     customs_df[u"国别代码"] = "303"
     customs_df[u"原产国"] = u"英国"
     customs_df[u"FROM"] = "Man"
+    customs_df[u'HS编码'] = "1901101000"
 
     #sort
     customs_df.sort_values(by=[u"序号", u'分运单号'], inplace=True)
