@@ -791,13 +791,13 @@ def remap_customs_df(customs_final_df):
         ws.append(r)
 
     # merge cell for this one
-    base_index = 7
+    # base_index = 7
     # last_value = 0
     # last_row_num = None
     # columns = (1, 2, 4, 15, 16, 17, 18, 19, 20, 22, 23, 24, 26)
-    for row_num in range(base_index, base_index + row_count):
-        rd = ws.row_dimensions[row_num]
-        rd.height = 50
+    #for row_num in range(base_index, base_index + row_count):
+    #    rd = ws.row_dimensions[row_num]
+    #    rd.height = 50
 
         # is_last_row = (row_num == base_index + row_count - 1)
         #
