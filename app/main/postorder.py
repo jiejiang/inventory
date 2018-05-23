@@ -190,11 +190,13 @@ def calculate_item_info_from_db_without_product_info(n_row, item_name, item_coun
             or not product_info.full_name:
         raise Exception, u"第%d行商品 [%s] 注册信息不完整" % (n_row + 1, item_name)
 
+    waybill_name = product_info.waybill_name if product_info.waybill_name else product_info.full_name
+
     return product_info.unit_price * product_info.unit_per_item * item_count, product_info.net_weight * item_count, \
         product_info.gross_weight * item_count, product_info.unit_price, \
         product_info.full_name, \
         product_info.net_weight, product_info.tax_code, product_info.billing_unit, product_info.billing_unit_code, \
-        product_info.unit_per_item, product_info.specification
+        product_info.unit_per_item, product_info.specification, waybill_name
 
 
 class NoTextImageWriter(ImageWriter):
@@ -516,10 +518,10 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_gene
         item_name = str(item_name).strip()
 
         sub_total_price, net_weight, gross_weight, unit_price, item_full_name, net_weight_per_item, tax_code, \
-        billing_unit, billing_unit_code, unit_per_item, specification \
+        billing_unit, billing_unit_code, unit_per_item, specification, waybill_name \
             = calculate_item_info_from_db_without_product_info(n_row, item_name, item_count)
 
-        item_names.append(u"%s\u2736%d" % (item_full_name, item_count))
+        item_names.append(u"%s\u2736%d" % (waybill_name, item_count))
         total_price += sub_total_price
         total_item_count += item_count
         total_net_weight += net_weight

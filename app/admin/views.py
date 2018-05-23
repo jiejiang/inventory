@@ -177,7 +177,8 @@ class ProductInfoAdmin(LoginRequiredModelView):
     #inline_models = [(ProductCountInfo, dict(form_columns=['count']))]
     #inline_models = (ProductCountInfoInlineModelForm(ProductCountInfo),)
     column_list = (
-        'name', 'net_weight', 'gross_weight', 'unit_price', 'unit_per_item', 'tax_code', 'full_name', 'report_name', 'deprecated')
+        'name', 'net_weight', 'gross_weight', 'unit_price', 'unit_per_item', 'tax_code', 'full_name', 'report_name',
+        'waybill_name', 'deprecated')
 
     column_labels = dict(name=u"商品名称", net_weight=u"每件净重(KG)", count_infos=u"箱件数 / 毛重  -- 已作废",
                          price_per_kg=u"每千克价格(KG) -- 已作废", full_name=u"全称(设置后无法修改)", deprecated=u"弃用",
@@ -186,7 +187,7 @@ class ProductInfoAdmin(LoginRequiredModelView):
                          bc_product_code=u"BC商品编码", bc_specification=u"BC商品规格型号",
                          bc_second_quantity=u"BC第二数量", bc_measurement_unit=u"BC计量单位",
                          bc_second_measurement_unit=u"BC第二计量单位", report_name=u"报单中显示名称",
-                         ticket_name=u"小票名称", ticket_price=u"小票单价")
+                         ticket_name=u"小票名称", ticket_price=u"小票单价", waybill_name=u"面单中显示名称")
     can_view_details = True
     column_default_sort = ('name', False)
     column_searchable_list = ('name', 'full_name', 'report_name')

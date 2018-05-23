@@ -376,6 +376,8 @@ class ProductInfo(db.Model):
     ticket_name = db.Column(db.String(128))
     ticket_price = db.Column(db.Float)
 
+    waybill_name = db.Column(db.String(128))
+
     #deprecated
     price_per_kg = db.Column(db.Float)
 
