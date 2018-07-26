@@ -209,8 +209,8 @@ class NoTextImageWriter(ImageWriter):
 
 def random_date():
     now = datetime.datetime.now()
-    start = now + datetime.timedelta(days=-60)
-    end = now + datetime.timedelta(days=-30)
+    start = now + datetime.timedelta(days=-21)
+    end = now + datetime.timedelta(days=-1)
     delta = end - start
     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
     random_second = random.randrange(int_delta)
@@ -309,7 +309,7 @@ def generate_tickets_from_mapping_file(input_xlsx, mapping_xlsx, output_dir):
             shutil.make_archive(ticket_dir, 'zip', ticket_dir)
         shutil.rmtree(ticket_dir)
 
-def generate_tickets(ticket_info, ticket_dir, suffix='.x.jpg.jpg'):
+def generate_tickets(ticket_info, ticket_dir, suffix='.x.jpg'):
     item_column = ticket_info['item_column']
     count_column = ticket_info['count_column']
     price_column = ticket_info['price_column']
@@ -922,7 +922,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                             pdf_content.seek(0)
                             images = convert_from_bytes(pdf_content.read(), dpi=50)
                             if images:
-                                images[0].save(os.path.join(waybill_dir, waybill['tracking_no'] + '.y.jpg.jpg'))
+                                images[0].save(os.path.join(waybill_dir, waybill['tracking_no'] + '.y.jpg'))
                             else:
                                 raise Exception, "No jpg waybill generated for %s" % waybill['tracking_no']
             else:
