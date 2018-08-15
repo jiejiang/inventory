@@ -16,7 +16,7 @@ from sqlalchemy import func, desc, or_, and_
 import pandas as pd
 from . import api
 from .. import db
-from ..models import Job, Order, Retraction, City
+from ..models import Job, Order, Retraction, City, ProductInfo
 from ..util import time_to_filename
 from ..main.postorder import read_order_numbers, retract_from_order_numbers, load_order_info
 from auth import http_basic_auth, login_required
@@ -443,3 +443,18 @@ class CityListAPI(Resource):
             json.dumps(provinces, ensure_ascii=False, sort_keys=True, indent=4, separators=(',', ': ')).encode('utf8'))
 
 api.add_resource(CityListAPI, '/cities')
+
+
+class ProductListAPI(Resource):
+    method_decorators = [login_required, ]
+
+    product_fields = {
+        'name': fields.String(),
+        'full_name': fields.String(),
+    }
+
+    def get(self):
+        products = ProductInfo.query.filter(ProductInfo.deprecated==False).all()
+        return wrap_json_response({'products': marshal(products, self.product_fields)})
+
+api.add_resource(ProductListAPI, '/products')
