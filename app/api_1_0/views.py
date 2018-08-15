@@ -454,7 +454,7 @@ class ProductListAPI(Resource):
     }
 
     def get(self):
-        products = ProductInfo.query.filter(ProductInfo.deprecated==False).all()
+        products = ProductInfo.query.filter(ProductInfo.deprecated==False).order_by(ProductInfo.full_name).all()
         return wrap_json_response({'products': marshal(products, self.product_fields)})
 
 api.add_resource(ProductListAPI, '/products')
