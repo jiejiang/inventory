@@ -16,7 +16,7 @@ from wtforms.validators import ValidationError
 
 from .. import db
 from . import admin
-from ..models import Order, Job, ProductInfo, ProductCountInfo, Retraction
+from ..models import Order, Job, ProductInfo, ProductCountInfo, Retraction, Route
 from ..util import time_format
 
 class LoginRequiredModelView(sqla.ModelView):
@@ -178,7 +178,7 @@ class ProductInfoAdmin(LoginRequiredModelView):
     #inline_models = (ProductCountInfoInlineModelForm(ProductCountInfo),)
     column_list = (
         'name', 'net_weight', 'gross_weight', 'unit_price', 'unit_per_item', 'tax_code', 'full_name', 'report_name',
-        'waybill_name', 'deprecated')
+        'waybill_name', 'routes', 'deprecated')
 
     column_labels = dict(name=u"商品名称", net_weight=u"每件净重(KG)", count_infos=u"箱件数 / 毛重  -- 已作废",
                          price_per_kg=u"每千克价格(KG) -- 已作废", full_name=u"全称(设置后无法修改)", deprecated=u"弃用",
@@ -187,7 +187,7 @@ class ProductInfoAdmin(LoginRequiredModelView):
                          bc_product_code=u"BC商品编码", bc_specification=u"BC商品规格型号",
                          bc_second_quantity=u"BC第二数量", bc_measurement_unit=u"BC计量单位",
                          bc_second_measurement_unit=u"BC第二计量单位", report_name=u"报单中显示名称",
-                         ticket_name=u"小票名称", ticket_price=u"小票单价", waybill_name=u"面单中显示名称")
+                         ticket_name=u"小票名称", ticket_price=u"小票单价", waybill_name=u"面单中显示名称", routes=u'线路')
     can_view_details = True
     column_default_sort = ('name', False)
     column_searchable_list = ('name', 'full_name', 'report_name')
@@ -197,7 +197,8 @@ class ProductInfoAdmin(LoginRequiredModelView):
         return Markup(model.count_info_string)
 
     column_formatters = {
-        'count_infos': _show_count_infos
+        'count_infos': _show_count_infos,
+
     }
 
     def on_model_change(self, form, model, is_created):
@@ -209,7 +210,7 @@ class ProductInfoAdmin(LoginRequiredModelView):
             model.full_name = "".join(model.full_name.strip().split())
 
     def ticket_name_max_length(form, field):
-        if len(field.data) > 30:
+        if field.data and len(field.data) > 30:
             raise ValidationError(u"小票名称最长30字符")
 
     form_args = dict(
@@ -229,10 +230,17 @@ class RetractionAdmin(LoginRequiredModelView):
         'timestamp': lambda v, c, m, p: time_format(m.timestamp),
     }
 
-admin.add_view(SuccessJobAdmin(Job, db.session, endpoint="admin.success_jobs", name=u"生成订单下载"))
-admin.add_view(RetractionAdmin(Retraction, db.session, endpoint="admin.success_retraction", name=u"提取订单下载"))
+
+class RouteAdmin(LoginRequiredModelView):
+    column_labels = dict(name=u"名称", code=u"编码", products=u'包含产品')
+    column_list = ('name', 'code', 'products')
+
+
+admin.add_view(SuccessJobAdmin(Job, db.session, endpoint="admin.success_jobs", name=u"生成订单"))
+admin.add_view(RetractionAdmin(Retraction, db.session, endpoint="admin.success_retraction", name=u"提取订单"))
+admin.add_view(RouteAdmin(Route, db.session, endpoint="admin.route", name=u"线路管理"))
 admin.add_view(ProductInfoAdmin(ProductInfo, db.session, endpoint="admin.product_info", name=u"商品信息"))
-admin.add_view(UnusedOrderAdmin(Order, db.session, endpoint="admin.unused_standard_order", name=u"未使用吉讯订单"))
+admin.add_view(UnusedOrderAdmin(Order, db.session, endpoint="admin.unused_standard_order", name=u"未使用订单"))
 admin.add_view(UsedOrderAdmin(Order, db.session, endpoint="admin.used_order", name=u"已生成订单"))
 admin.add_view(UnretractedOrderAdmin(Order, db.session, endpoint="admin.unretracted_order", name=u"未提取订单"))
 admin.add_view(RetractedOrderAdmin(Order, db.session, endpoint="admin.retracted_order", name=u"已提取订单"))

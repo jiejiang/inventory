@@ -16,7 +16,7 @@ from sqlalchemy import func, desc, or_, and_
 import pandas as pd
 from . import api
 from .. import db
-from ..models import Job, Order, Retraction, City, ProductInfo
+from ..models import Job, Order, Retraction, City, ProductInfo, Route
 from ..util import time_to_filename
 from ..main.postorder import read_order_numbers, retract_from_order_numbers, load_order_info
 from auth import http_basic_auth, login_required
@@ -444,6 +444,8 @@ class CityListAPI(Resource):
 
 api.add_resource(CityListAPI, '/cities')
 
+product_list_parser = reqparse.RequestParser()
+product_list_parser.add_argument('route_code', type=str, help="Route code", required=False)
 
 class ProductListAPI(Resource):
     method_decorators = [login_required, ]
@@ -454,7 +456,12 @@ class ProductListAPI(Resource):
     }
 
     def get(self):
-        products = ProductInfo.query.filter(ProductInfo.deprecated==False).order_by(ProductInfo.full_name).all()
-        return wrap_json_response({'products': marshal(products, self.product_fields)})
+        args = product_list_parser.parse_args()
+        route_code = args.get('route_code', None)
+        products = ProductInfo.query.filter(ProductInfo.deprecated==False)
+        if route_code:
+            products = products.filter(ProductInfo.routes.any(Route.code==route_code))
+        return wrap_json_response({'products': marshal(products.order_by(ProductInfo.full_name).all(),
+                                                       self.product_fields)})
 
 api.add_resource(ProductListAPI, '/products')

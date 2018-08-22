@@ -344,6 +344,24 @@ class Retraction(db.Model):
         return self.uuid
 
 
+product_routes = db.Table('product_routes',
+    db.Column('route_id', db.Integer, db.ForeignKey('route.id'), primary_key=True),
+    db.Column('product_info_id', db.Integer, db.ForeignKey('product_info.id'), primary_key=True)
+)
+
+
+class Route(db.Model):
+    __tablename__ = "route"
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(128), nullable=False, index=True, unique=True)
+    name = db.Column(db.String(128), nullable=False)
+    products = db.relationship('ProductInfo', secondary=product_routes, lazy='subquery',
+                           backref=db.backref('routes', lazy=True))
+
+    def __str__(self):
+        return self.name
+
+
 class ProductInfo(db.Model):
     __tablename__ = "product_info"
     id = db.Column(db.Integer, primary_key=True)
@@ -380,6 +398,9 @@ class ProductInfo(db.Model):
 
     #deprecated
     price_per_kg = db.Column(db.Float)
+
+    def __str__(self):
+        return self.full_name
 
     @property
     def count_info_string(self):
