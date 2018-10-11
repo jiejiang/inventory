@@ -674,7 +674,7 @@ def generate_customs_df(route_config, version, package_df):
 
     package_df["Sequence"] = range(1, len(package_df.index) + 1)
 
-    customs_columns = [u'序号', u'分运单号', u'货物品名', u'件数', u'提单重量', u'派送重量',
+    customs_columns = [u'序号', u'分运单号', u'货物中文名称', u'货物英文名称', u'件数', u'提单重量', u'派送重量',
                        u'数量', u'实际数量', u'单位',
                        u'货币编码', u'单价', u'个人完税税号', u'型号', u'国别代码', u'原产国',
                        u'HS编码', u'收件人ID', u'收件人', u'地址', u'收件人电话', u'TO',
@@ -682,7 +682,7 @@ def generate_customs_df(route_config, version, package_df):
                        u'FROM', u'货主城市']
     customs_df = pd.DataFrame([], columns=customs_columns)
     for column, p_column in ((u'分运单号', u'快件单号'),
-                             (u'货物品名', u'内件名称'),
+                             (u'货物中文名称', u'内件名称'),
                              (u'派送重量', u'毛重（KG）'),
                              (u'数量', u'数量'),
                              (u'实际数量', u'数量'),
@@ -701,10 +701,10 @@ def generate_customs_df(route_config, version, package_df):
 
     #fill in bc product info
     product_info_df = pd.read_sql_query(ProductInfo.query.filter(ProductInfo.full_name.in_(
-        tuple(set(customs_df[u'货物品名'].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
+        tuple(set(customs_df[u'货物中文名称'].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
     columns_to_delete = product_info_df.columns
-    product_info_df.rename(columns={'full_name': u'货物品名'}, inplace=True)
-    customs_df = pd.merge(customs_df, product_info_df, on=u'货物品名')
+    product_info_df.rename(columns={'full_name': u'货物中文名称'}, inplace=True)
+    customs_df = pd.merge(customs_df, product_info_df, on=u'货物中文名称')
     product_info_columns = [(u"单位", "billing_unit"),
                             (u"单价", "unit_price"),
                             (u"个人完税税号", "tax_code"),
@@ -716,7 +716,7 @@ def generate_customs_df(route_config, version, package_df):
                (u"小票价格", "ticket_price")]:
         null_valued = pd.isnull(customs_df[_column])
         if null_valued.any():
-            product_name_null_valued = customs_df[null_valued][u'货物品名'].drop_duplicates() \
+            product_name_null_valued = customs_df[null_valued][u'货物中文名称'].drop_duplicates() \
                 .map(lambda x: str(x)).tolist()
             raise Exception, u"如下商品的注册信息未包含必须字段[%s]: %s" % \
                              (column, ", ".join(product_name_null_valued))
@@ -732,8 +732,8 @@ def generate_customs_df(route_config, version, package_df):
         customs_df[column] = customs_df[p_column]
 
     def customs_column_filter(row):
-        name = row[u"货物品名"] if pd.isnull(row["report_name"]) else row["report_name"]
-        row[u"货物品名"] = "%s*%d" % (name, row[u"实际数量"])
+        name = row[u"货物中文名称"] if pd.isnull(row["report_name"]) else row["report_name"]
+        row[u"货物中文名称"] = "%s*%d" % (name, row[u"实际数量"])
         row[u"数量"] = row[u"实际数量"] * row["unit_per_item"]
         return row
 
