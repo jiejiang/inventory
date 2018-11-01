@@ -733,8 +733,8 @@ def generate_customs_df(route_config, version, package_df):
 
     def customs_column_filter(row):
         name = row[u"货物中文名称"] if pd.isnull(row["report_name"]) else row["report_name"]
-        row[u"货物英文名称"] = "%s * %d" % (row["ticket_name"], row[u"实际数量"])
-        row[u"货物中文名称"] = "%s * %d" % (name, row[u"实际数量"])
+        row[u"货物英文名称"] = "%s*%d" % (row["ticket_name"], row[u"实际数量"])
+        row[u"货物中文名称"] = "%s*%d" % (name, row[u"实际数量"])
         row[u"数量"] = row[u"实际数量"] * row["unit_per_item"]
         return row
 
