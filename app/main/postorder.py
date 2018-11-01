@@ -856,10 +856,14 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
             raise Exception, u"第%d行包含未上载订单号: %s" % (i + 1, order_number)
         if not order.used:
             raise Exception, u"第%d行包含未使用订单号: %s" % (i + 1, order_number)
-        if retraction is not None and order.retraction is not None:
-            raise Exception, u"第%d行订单号已被提取: %s, 提取信息为: Uuid [%s], 时间 [%s]" % \
-                             (i + 1, order_number, order.retraction.uuid,
-                              time_to_filename(order.retraction.timestamp))
+        if retraction is not None and retraction.is_redo: #normal
+            if order.retraction is None:
+                raise Exception, u"第%d行订单号还未被提取: %s" % (i + 1, order_number)
+        else: #normal
+            if retraction is not None and order.retraction is not None:
+                raise Exception, u"第%d行订单号已被提取: %s, 提取信息为: Uuid [%s], 时间 [%s]" % \
+                                 (i + 1, order_number, order.retraction.uuid,
+                                  time_to_filename(order.retraction.timestamp))
         receiver_sig = order.receiver_id_number
         if not receiver_sig in receiver_sig_to_order_numbers:
             receiver_sig_to_order_numbers[receiver_sig] = []
@@ -875,7 +879,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
             uuid_to_order_numbers[uuid] = set()
         uuid_to_order_numbers[uuid].add(order_number)
         job_versions[uuid] = order.job.version if order.job.version else "v1"
-        if retraction:
+        if retraction and not retraction.is_redo:
             order.retraction = retraction
 
     version_to_dfs = {}

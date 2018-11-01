@@ -192,6 +192,7 @@ class RetractionAPI(Resource):
         route_config = current_app.config['ROUTE_CONFIG'][route]
         dryrun = request.form.get('dryrun', False)
         file = request.files['file']
+        is_redo = request.form.get('is_redo', "false") == "true"
         if file:
             curdir = os.getcwd()
             try:
@@ -209,6 +210,7 @@ class RetractionAPI(Resource):
                     tmpdir = None
                 else:
                     retraction = Retraction.new()
+                    retraction.is_redo = is_redo
                     outdir = os.path.join(os.path.join(current_app.config['RETRACTION_FOLDER']), retraction.uuid)
                     tmpdir = os.path.join(os.path.join(outdir), "tmp")
                     if os.path.exists(outdir):

@@ -5,6 +5,7 @@ postOrdersApp.controller('RetractOrders', ['$scope', 'Upload', '$location', '$ti
 
     $scope.running = false;
     $scope.retraction_id = null;
+    $scope.is_redo = false;
 
     $scope.query_stats();
 
@@ -25,7 +26,7 @@ postOrdersApp.controller('RetractOrders', ['$scope', 'Upload', '$location', '$ti
                 Upload.upload({
                     url: $scope.$parent.api_prefix + '/retract-orders',
                     file: file,
-                    data: {route: $scope.route},
+                    data: {route: $scope.route, is_redo: $scope.is_redo},
                 }).progress(function (evt) {
                     $scope.upload_file.percentage = parseInt(100.0 * evt.loaded / evt.total);
                 }).success(function (data, status, headers, config) {

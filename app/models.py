@@ -334,6 +334,8 @@ class Retraction(db.Model):
     message = db.Column(db.Text)
     orders = db.relationship("Order", backref='retraction', lazy='dynamic')
 
+    is_redo = db.Column(db.Boolean, default=False)
+
     @staticmethod
     def new():
         id = str(uuid.uuid4())

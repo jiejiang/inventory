@@ -6,12 +6,15 @@
 
 <div class="row">
     <div class="col-lg-3 col-md-3">
-        <div class="input-group top-mini-buffer">
+        <div class="input-group">
             <span class="input-group-addon" popover-trigger="mouseenter" popover-placement="bottom" popover="线路选择"><i class="fa fa-truck fa-fw"></i></span>
             <select class="form-control" ng-model="route" >
                 <option value="">--------</option>
                 <option value="cc">CC线</option>
             </select>
+        </div>
+        <div ng-show="route">
+            <input type="checkbox" ng-model="is_redo">重新提取（如果你不明白该选项的作用，请不要选取）
         </div>
     </div>
 
