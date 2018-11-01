@@ -211,6 +211,8 @@ class RetractionAPI(Resource):
                 else:
                     retraction = Retraction.new()
                     retraction.is_redo = is_redo
+                    db.session.add(retraction)
+
                     outdir = os.path.join(os.path.join(current_app.config['RETRACTION_FOLDER']), retraction.uuid)
                     tmpdir = os.path.join(os.path.join(outdir), "tmp")
                     if os.path.exists(outdir):
