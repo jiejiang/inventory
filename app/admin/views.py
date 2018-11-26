@@ -138,10 +138,10 @@ class UnusedOrderAdmin(OrderAdmin):
     column_default_sort = ('order_number', False)
 
     def get_query(self):
-        return self.session.query(self.model).filter(self.model.used==False, self.model.type == Order.Type.JIXUN)
+        return self.session.query(self.model).filter(self.model.used==False, self.model.type == Order.Type.HESHAN)
 
     def get_count_query(self):
-        return self.session.query(func.count('*')).filter(self.model.used == False, self.model.type == Order.Type.JIXUN)
+        return self.session.query(func.count('*')).filter(self.model.used == False, self.model.type == Order.Type.HESHAN)
 
 
 class UnretractedOrderAdmin(OrderAdmin):

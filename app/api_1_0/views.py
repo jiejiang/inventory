@@ -229,7 +229,7 @@ class RetractionAPI(Resource):
                         assert (len(id_number) == 1)
                         return pd.Series({
                             'message': '%s Pieces, OK' % row[u"数量"].sum(), 'receiver_name': receiver[0],
-                            'receiver_id_number': id_number[0],
+                            'receiver_id_number': id_number[0], 'pieces': row[u"数量"].sum(),
                             'detail': "/".join(map(lambda x: "%s(%s)" % (x[0], x[1]), zip(row[u"内件名称"], row[u"数量"]))),
                         })
 
@@ -367,6 +367,7 @@ class OrderInfoAPI(Resource):
                     zip(order_df[u"内件名称"].map(lambda x:str(x)).tolist(),
                         order_df[u"数量"].map(lambda x:str(x)).tolist())))
             info['message'] = "%d Pieces, OK" % pieces
+            info['pieces'] = pieces
             info['receiver_name'] = order.receiver_name
             info['receiver_id_number'] = order.receiver_id_number
             info['success'] = True

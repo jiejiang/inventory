@@ -8,6 +8,8 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
         $scope.invalidScan = [];
         $scope.barcodeStorage = new Object();
         $scope.receiverCount = new Object();
+        $scope.counter_4_pieces = 0;
+        $scope.counter_6_pieces = 0;
         $scope.exportBarcodes = "";
         $scope.clearAlerts();
         $scope.running = false;
@@ -53,6 +55,23 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
         return ""
     };
 
+    function increasePiecesCount(barcode) {
+
+        if ($scope.barcodeStorage[barcode].pieces == '4'){
+            $scope.counter_4_pieces++;
+        } else if ($scope.barcodeStorage[barcode].pieces == '6') {
+            $scope.counter_6_pieces++;
+        }
+    }
+
+    function decreasePiecesCount(barcode) {
+        if ($scope.barcodeStorage[barcode].pieces == '4'){
+            $scope.counter_4_pieces--;
+        } else if ($scope.barcodeStorage[barcode].pieces == '6') {
+            $scope.counter_6_pieces--;
+        }
+    }
+
     $scope.onReset = function() {
         $scope.initialize();
         $scope.route = "";
@@ -89,6 +108,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
         if ($scope.receiverCount[id_number] > 0) {
             $scope.receiverCount[id_number] -= 1;
         }
+        decreasePiecesCount(barcode);
         delete $scope.barcodeStorage[barcode];
         if (index === $scope.validScan.length - 1) {
             $scope.getAcceptClass = getInactiveClass;
@@ -121,6 +141,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
                             $scope.getRejectClass = getActiveClass;
                         } else {
                             $scope.barcodeStorage[barcode] = data;
+                            increasePiecesCount(barcode);
                             $scope.validScan.push({barcode:barcode, prompt:data.message});
                             message = data.message;
                             $scope.receiverCount[receiver_id_number] += 1;
@@ -215,6 +236,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
                     for (var i = 0, len = data.length; i < len; i++) {
                         var scan = data[i];
                         $scope.barcodeStorage[scan.barcode] = scan;
+                        increasePiecesCount(scan.barcode);
                         if (!$scope.receiverCount.hasOwnProperty(scan.receiver_id_number)) {
                             $scope.receiverCount[scan.receiver_id_number] = 0;
                         }

@@ -23,6 +23,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from flask import current_app
 from pdf2image import convert_from_path, convert_from_bytes
 from faker import Faker
+from unidecode import unidecode
 
 from ..models import City, Order, ProductInfo
 from .. import db
@@ -406,7 +407,7 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
         raise Exception, "Image failed to create"
 
     env = Environment(loader=FileSystemLoader('templates'))
-    template = env.get_template('barcode.html')
+    template = env.get_template('barcode_fast_track.html')
     context['time'] = datetime.datetime.now()
     context['bot_image'] = bot_image
     context['top_image'] = top_image
@@ -674,41 +675,42 @@ def generate_customs_df(route_config, version, package_df):
 
     package_df["Sequence"] = range(1, len(package_df.index) + 1)
 
-    customs_columns = [u'序号', u'分运单号', u'货物中文名称', u'货物英文名称', u'件数', u'提单重量', u'派送重量',
-                       u'数量', u'实际数量', u'单位',
-                       u'货币编码', u'单价', u'个人完税税号', u'型号', u'国别代码', u'原产国',
-                       u'HS编码', u'收件人ID', u'收件人', u'地址', u'收件人电话', u'TO',
-                       u'落地配单号', u'寄件人公司', u'寄件人', u'寄件人地址', u'寄件人电话',
-                       u'FROM', u'货主城市']
+    customs_columns = [u'类别', u'收发货人编号', u'收发货人名称', u'收发货人统一社会信用代码', u'提单号', u'分运单号',
+                       u'商品序号', u'货物名称', u'货物英文名称', u'产销城市', u'商品编码', u'数量', u'净重(KG)', u'毛重(KG)',
+                       u'规格/型号', u'申报单价', u'申报数量', u'申报总价', u'成交总价', u'申报计量单位', u'收件人',
+                       u'收发件人证件号', u'收发件人证件类型', u'收件人城市', u'收件人地址', u'收件人电话', u'货主单位名称',
+                       u'货主单位代码', u'货主单位统一社会信用代码', u'货主单位地区代码', u'贸易国别', u'产销国', u'发件人',
+                       u'英文发件人', u'发件人国别', u'发件人城市', u'英文发件人城市', u'英文经停城市', u'发件人地址',
+                       u'英文发件人地址', u'发件人电话', u'包装种类', u'是否含木质包装', u'是否为旧物品', u'是否为低温运输',
+                       u'用途', u'随附单证类型', u'随附单证编号']
+
     customs_df = pd.DataFrame([], columns=customs_columns)
     for column, p_column in ((u'分运单号', u'快件单号'),
-                             (u'货物中文名称', u'内件名称'),
-                             (u'派送重量', u'毛重（KG）'),
+                             (u'货物名称', u'内件名称'),
                              (u'数量', u'数量'),
-                             (u'实际数量', u'数量'),
-                             (u'收件人ID', u'备注'),
+                             (u'毛重(KG)', u'毛重（KG）'),
                              (u'收件人', u'收件人'),
-                             (u'地址', u'收件人地址'),
+                             (u'收发件人证件号', u'备注'),
+                             (u'收件人城市', u'city'),
+                             (u'收件人地址', u'收件人地址'),
                              (u'收件人电话', u'电话号码.1'),
-                             (u'TO', u'province'),
-                             (u'落地配单号', u'快件单号'),
-                             (u'寄件人', u'发件人'),
-                             (u'寄件人地址', u'发件人地址'),
-                             (u'寄件人电话', u'电话号码'),
-                             (u'货主城市', u'province'),
-                             ("Sequence", "Sequence")):
+                             (u'货主单位名称', u'收件人'),
+                             (u'发件人', u'发件人'),
+                             (u'发件人地址', u'发件人地址'),
+                             (u'发件人电话', u'电话号码'),
+                             ('Sequence', 'Sequence')):
         customs_df[column] = package_df[p_column]
 
     #fill in bc product info
     product_info_df = pd.read_sql_query(ProductInfo.query.filter(ProductInfo.full_name.in_(
-        tuple(set(customs_df[u'货物中文名称'].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
+        tuple(set(customs_df[u'货物名称'].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
     columns_to_delete = product_info_df.columns
-    product_info_df.rename(columns={'full_name': u'货物中文名称'}, inplace=True)
-    customs_df = pd.merge(customs_df, product_info_df, on=u'货物中文名称')
-    product_info_columns = [(u"单位", "billing_unit"),
-                            (u"单价", "unit_price"),
-                            (u"个人完税税号", "tax_code"),
-                            (u"型号", "specification")]
+    product_info_df.rename(columns={'full_name': u'货物名称'}, inplace=True)
+    customs_df = pd.merge(customs_df, product_info_df, on=u'货物名称')
+    product_info_columns = [(u"申报单价", "unit_price"),
+                            (u"商品编码", "tax_code"),
+                            (u"规格/型号", "specification"),
+                            (u"申报计量单位", "billing_unit_code")]
     # check if any is empty
     for column, _column in product_info_columns \
             + [(u"单个物品申报数量", "unit_per_item"),
@@ -716,15 +718,15 @@ def generate_customs_df(route_config, version, package_df):
                (u"小票价格", "ticket_price")]:
         null_valued = pd.isnull(customs_df[_column])
         if null_valued.any():
-            product_name_null_valued = customs_df[null_valued][u'货物中文名称'].drop_duplicates() \
+            product_name_null_valued = customs_df[null_valued][u'货物名称'].drop_duplicates() \
                 .map(lambda x: str(x)).tolist()
             raise Exception, u"如下商品的注册信息未包含必须字段[%s]: %s" % \
                              (column, ", ".join(product_name_null_valued))
 
     ticket_info = {
-        'groups': customs_df[[u'分运单号', "ticket_name", u'实际数量', "ticket_price"]].groupby(u'分运单号'),
+        'groups': customs_df[[u'分运单号', "ticket_name", u'数量', "ticket_price"]].groupby(u'分运单号'),
         'item_column': 'ticket_name',
-        'count_column': u'实际数量',
+        'count_column': u'数量',
         'price_column': 'ticket_price',
     }
 
@@ -732,10 +734,14 @@ def generate_customs_df(route_config, version, package_df):
         customs_df[column] = customs_df[p_column]
 
     def customs_column_filter(row):
-        name = row[u"货物中文名称"] if pd.isnull(row["report_name"]) else row["report_name"]
-        row[u"货物英文名称"] = "%s*%d" % (row["ticket_name"], row[u"实际数量"])
-        row[u"货物中文名称"] = "%s*%d" % (name, row[u"实际数量"])
-        row[u"数量"] = row[u"实际数量"] * row["unit_per_item"]
+        row[u"货物名称"] = row[u"货物名称"] if pd.isnull(row["report_name"]) else row["report_name"]
+        row[u"货物英文名称"] = row["ticket_name"]
+        row[u"净重(KG)"] = row[u"数量"] * row["net_weight"]
+        row[u'申报数量'] = row[u'数量'] * row["unit_per_item"]
+        row[u'申报总价'] = row[u'申报数量'] * row[u"申报单价"]
+        row[u'成交总价'] = row[u'申报数量'] * row[u"申报单价"]
+        row[u'英文发件人'] = unidecode(row[u'发件人'])
+        row[u'英文发件人地址'] = unidecode(row[u'发件人地址'])
         return row
 
     customs_df = customs_df.apply(customs_column_filter, axis=1)
@@ -747,23 +753,36 @@ def generate_customs_df(route_config, version, package_df):
     customs_df.sort_values(by=["Sequence"], inplace=True)
 
     #index create
-    index_df = customs_df[[u"分运单号"]].copy()
-    index_df.drop_duplicates(inplace=True)
-    index_df["order"] = range(1, len(index_df.index) + 1)
-    customs_df = pd.merge(customs_df, index_df, on=u'分运单号')
-    customs_df[u"序号"] = customs_df['order']
+    index_df = customs_df[[u"分运单号", "Sequence"]].copy()
+    index_df["order"] = None
+    g = index_df.groupby(u"分运单号")
+    def group_index(group):
+        group["order"] = range(1, len(group.index)+1)
+        return group
+    index_df = g.apply(group_index)
+    del index_df[u"分运单号"]
+    customs_df = pd.merge(customs_df, index_df, on='Sequence')
+    customs_df[u"商品序号"] = customs_df['order']
     del customs_df["order"]
 
     #fixed items
-    customs_df[u"件数"] = "1"
-    customs_df[u"货币编码"] = "RMB"
-    customs_df[u"国别代码"] = "303"
-    customs_df[u"原产国"] = u"英国"
-    customs_df[u"FROM"] = "Man"
-    customs_df[u'HS编码'] = "1901101000"
+    customs_df[u"类别"] = "B"
+    customs_df[u"产销城市"] = u"曼城Manchester"
+    customs_df[u"收发件人证件类型"] = "1"
+    customs_df[u"贸易国别"] = "303"
+    customs_df[u"产销国"] = "303"
+    customs_df[u"发件人国别"] = "303"
+    customs_df[u"发件人城市"] = "Manchester"
+    customs_df[u"英文发件人城市"] = "Manchester"
+    customs_df[u"英文经停城市"] = "n"
+    customs_df[u"包装种类"] = "5"
+    customs_df[u"是否含木质包装"] = "0"
+    customs_df[u"是否为旧物品"] = "0"
+    customs_df[u"是否为低温运输"] = "0"
+    customs_df[u"用途"] = "11"
 
     #sort
-    customs_df.sort_values(by=[u"序号", u'分运单号'], inplace=True)
+    customs_df.sort_values(by=["Sequence", u"商品序号"], inplace=True)
 
     del customs_df["Sequence"]
     del package_df["Sequence"]
@@ -968,7 +987,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 generate_tickets(ticket_info, ticket_dir)
 
                 wb = remap_customs_df(customs_final_df)
-                wb.save(os.path.join(output, u"晋江申报单.xlsx".encode('utf8')))
+                wb.save(os.path.join(output, u"鹤山申报单.xlsx".encode('utf8')))
 
                 del package_final_df["province"]
                 del package_final_df["city"]

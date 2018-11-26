@@ -282,10 +282,10 @@ class Order(db.Model):
     retraction_id = db.Column(db.Integer, db.ForeignKey('retraction.id'), nullable=True)
 
     class Type:
-        JIXUN = 1
+        HESHAN = 1
 
         types = {
-            JIXUN : u"吉讯单号",
+            HESHAN : u"鹤山单号",
         }
 
     def make_reusable(self):
@@ -308,7 +308,7 @@ class Order(db.Model):
 
     @staticmethod
     def is_order_number_valid(type, order_number):
-        return type == Order.Type.JIXUN and re.match(r"^\d+$", order_number)
+        return type == Order.Type.HESHAN and re.match(r"^\d+$", order_number)
 
     @staticmethod
     def pick_first(type):
