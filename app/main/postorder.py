@@ -310,7 +310,7 @@ def generate_tickets_from_mapping_file(input_xlsx, mapping_xlsx, output_dir):
             shutil.make_archive(ticket_dir, 'zip', ticket_dir)
         shutil.rmtree(ticket_dir)
 
-def generate_tickets(ticket_info, ticket_dir, suffix='.x.jpg'):
+def generate_tickets(ticket_info, ticket_dir, suffix='.jpg'):
     item_column = ticket_info['item_column']
     count_column = ticket_info['count_column']
     price_column = ticket_info['price_column']
@@ -946,7 +946,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                             pdf_content.seek(0)
                             images = convert_from_bytes(pdf_content.read(), dpi=50)
                             if images:
-                                images[0].save(os.path.join(waybill_dir, waybill['tracking_no'] + '.y.jpg'))
+                                images[0].save(os.path.join(waybill_dir, waybill['tracking_no'] + '.jpg'))
                             else:
                                 raise Exception, "No jpg waybill generated for %s" % waybill['tracking_no']
             else:
