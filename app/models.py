@@ -280,6 +280,7 @@ class Order(db.Model):
     receiver_mobile = db.Column(db.String(64))
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=True)
     retraction_id = db.Column(db.Integer, db.ForeignKey('retraction.id'), nullable=True)
+    discarded_time = db.Column(db.DateTime, nullable=True, default=None)
 
     class Type:
         HESHAN = 1
@@ -288,7 +289,13 @@ class Order(db.Model):
             HESHAN : u"鹤山单号",
         }
 
+    def discard(self):
+        if self.retraction_id:
+            raise Exception, "Cannot discard extracted order"
+        self.discarded_time = datetime.datetime.now()
+
     def make_reusable(self):
+        raise Exception, "Not allowed"
         self.used = False
         self.used_time = None
         self.sender_address = None
@@ -314,11 +321,11 @@ class Order(db.Model):
     def pick_first(type):
         if not type in Order.Type.types:
             raise Exception, "Invalid type to choose from: %s" % type
-        return Order.query.filter_by(type=type, used=False).order_by(asc(Order.id)).first()
+        return Order.query.filter_by(type=type, used=False, discarded_time=None).order_by(asc(Order.id)).first()
 
     @staticmethod
     def pick_unused():
-        return Order.query.filter_by(used=False).order_by(asc(Order.id)).first()
+        return Order.query.filter_by(used=False, discarded_time=None).order_by(asc(Order.id)).first()
 
     @staticmethod
     def find_by_order_number(order_number):
@@ -372,6 +379,9 @@ class ProductInfo(db.Model):
     full_name = db.Column(db.String(128), nullable=False, unique=True, index=True)
     deprecated = db.Column(db.Boolean, default=False)
     count_infos = db.relationship("ProductCountInfo", backref='product_info', lazy='dynamic')
+
+    dutiable_as_any_4_pieces = db.Column(db.Boolean, default=False)
+    non_dutiable_as_all_6_pieces = db.Column(db.Boolean, default=False)
 
     # new attribute
     unit_price = db.Column(db.Float)

@@ -115,7 +115,7 @@ class UsedOrderAdmin(OrderAdmin):
     def get_count_query(self):
         return self.session.query(func.count('*')).filter(self.model.used == True)
 
-    @action('reuse', u"回收单号", u"您确定需要回收这些单号？")
+    @action('reuse', u"弃用单号", u"您确定需要弃用这些单号？")
     def action_approve(self, ids):
         try:
             order_numbers = []
@@ -123,13 +123,13 @@ class UsedOrderAdmin(OrderAdmin):
             for order in query.all():
                 order_numbers.append(order.order_number)
                 if order.retraction_id:
-                    raise Exception, u"无法回收已提取单号: %s" % order.order_number
-                order.make_reusable()
+                    raise Exception, u"无法弃用已提取单号: %s" % order.order_number
+                order.discard()
             db.session.commit()
-            flash(u"如下单号已经回收：[%s]" % ", ".join(order_numbers))
+            flash(u"如下单号已经弃用：[%s]" % ", ".join(order_numbers))
         except Exception, inst:
 
-            flash(u"无法回收单号：[%s]。错误如下：\n%s" % (", ".join(order_numbers), str(inst)), "error")
+            flash(u"无法弃用单号：[%s]。错误如下：\n%s" % (", ".join(order_numbers), str(inst)), "error")
 
 
 class UnusedOrderAdmin(OrderAdmin):
@@ -187,7 +187,9 @@ class ProductInfoAdmin(LoginRequiredModelView):
                          bc_product_code=u"BC商品编码", bc_specification=u"BC商品规格型号",
                          bc_second_quantity=u"BC第二数量", bc_measurement_unit=u"BC计量单位",
                          bc_second_measurement_unit=u"BC第二计量单位", report_name=u"报单中显示名称",
-                         ticket_name=u"小票名称", ticket_price=u"小票单价", waybill_name=u"面单中显示名称", routes=u'线路')
+                         ticket_name=u"小票名称", ticket_price=u"小票单价", waybill_name=u"面单中显示名称", routes=u'线路',
+                         dutiable_as_any_4_pieces=u"4罐包含一个及以上该产品则报税",
+                         non_dutiable_as_all_6_pieces=u"6罐全是该产品则不报税")
     can_view_details = True
     column_default_sort = ('name', False)
     column_searchable_list = ('name', 'full_name', 'report_name')

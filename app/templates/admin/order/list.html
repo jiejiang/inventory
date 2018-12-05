@@ -1,12 +1,15 @@
 {% extends 'admin/model/list.html' %}
 {% block list_row_actions %} 
     {{ super() }}
-
+    {% if row.discarded_time %}
+    已弃用
+    {% else %}
     <form class="icon" method="POST" action="action/">
         <input id="action" name="action" value="reuse" type="hidden">
         <input name="rowid" value="{{ get_pk_value(row) }}" type="hidden">
-        <button onclick="return confirm('您确定需要回收单号' + {{row.order_number}} + '?');" title="回收单号">
-          <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+        <button onclick="return confirm('您确定需要弃用单号' + {{row.order_number}} + '?');" title="弃用单号">
+          <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
         </button>
     </form>
+    {% endif %}
 {% endblock %}

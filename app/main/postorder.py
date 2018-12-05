@@ -875,6 +875,8 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
             raise Exception, u"第%d行包含未上载订单号: %s" % (i + 1, order_number)
         if not order.used:
             raise Exception, u"第%d行包含未使用订单号: %s" % (i + 1, order_number)
+        if order.discarded_time:
+            raise Exception, u"第%d行包含弃用订单号: %s" % (i + 1, order_number)
         if retraction is not None and retraction.is_redo: #normal
             if order.retraction is None:
                 raise Exception, u"第%d行订单号还未被提取: %s" % (i + 1, order_number)
@@ -1006,6 +1008,16 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
 
     return package_final_df
 
+def is_dutiable(package_df, product_col, pieces):
+    duitable = False
+    if pieces == 4:
+        duitable = True if package_df['dutiable_as_any_4_pieces'].any() else False
+    elif pieces == 6:
+        # do use None value
+        duitable = False if package_df['non_dutiable_as_all_6_pieces'].all(skipna=False) \
+                            and len(package_df[product_col].unique()) == 1 else True
+    return duitable
+
 def load_order_info(download_folder, order, route_config):
     version = order.job.version if order.job.version else "v1"
     if version <> "v3":
@@ -1039,7 +1051,14 @@ def load_order_info(download_folder, order, route_config):
                         raise Exception, "Error: Product Excluded"
         pieces = sub_package_df[u"数量"].sum()
 
-    return sub_package_df, pieces
+    product_info_df = pd.read_sql_query(ProductInfo.query.filter(ProductInfo.full_name.in_(
+        tuple(set(sub_package_df[u'内件名称'].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
+    product_info_df.rename(columns={'full_name': u'内件名称'}, inplace=True)
+    sub_package_df = pd.merge(sub_package_df, product_info_df, on=u'内件名称')
+
+    dutiable = is_dutiable(sub_package_df, u'内件名称', pieces)
+
+    return sub_package_df, pieces, dutiable
 
 if __name__ == "__main__":
     parser = OptionParser()

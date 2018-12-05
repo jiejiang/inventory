@@ -18,7 +18,7 @@ from . import api
 from .. import db
 from ..models import Job, Order, Retraction, City, ProductInfo, Route
 from ..util import time_to_filename
-from ..main.postorder import read_order_numbers, retract_from_order_numbers, load_order_info
+from ..main.postorder import read_order_numbers, retract_from_order_numbers, load_order_info, is_dutiable
 from auth import http_basic_auth, login_required
 
 STREAM_BUF_SIZE = 2048
@@ -230,10 +230,17 @@ class RetractionAPI(Resource):
                         return pd.Series({
                             'message': '%s Pieces, OK' % row[u"数量"].sum(), 'receiver_name': receiver[0],
                             'receiver_id_number': id_number[0], 'pieces': row[u"数量"].sum(),
+                            'dutiable': is_dutiable(row, u'内件名称', row[u"数量"].sum()),
                             'detail': "/".join(map(lambda x: "%s(%s)" % (x[0], x[1]), zip(row[u"内件名称"], row[u"数量"]))),
                         })
 
-                    extract_df = package_df[[u'快件单号', u'数量', u'内件名称', u'收件人', u'备注']]\
+                    product_info_df = pd.read_sql_query(ProductInfo.query.filter(ProductInfo.full_name.in_(
+                        tuple(set(package_df[u'内件名称'].map(lambda x: str(x)).tolist())))).statement, db.session.bind)
+                    product_info_df.rename(columns={'full_name': u'内件名称'}, inplace=True)
+                    package_df = pd.merge(package_df, product_info_df, on=u'内件名称')
+
+                    extract_df = package_df[[u'快件单号', u'数量', u'内件名称', u'收件人', u'备注',
+                                             'dutiable_as_any_4_pieces', 'non_dutiable_as_all_6_pieces']]\
                         .groupby(u'快件单号').apply(join_func)
                     extract_df['barcode'] = extract_df.index
 
@@ -319,7 +326,9 @@ class OrderAPI(Resource):
             abort(500, message="Invalid arguments")
         today = datetime.datetime.today()
         start_day = today - datetime.timedelta(days=args['days']+1)
-        return wrap_json_response(Order.query.filter(or_(*or_filters)).filter(Order.used_time >= start_day).order_by(desc(Order.used_time)).all())
+        return wrap_json_response(Order.query.filter(or_(*or_filters))
+                                  .filter(Order.used_time >= start_day, Order.discarded_time==None)
+                                  .order_by(desc(Order.used_time)).all())
 
 api.add_resource(OrderAPI, '/order')
 
@@ -361,13 +370,16 @@ class OrderInfoAPI(Resource):
                 raise Exception, "Error: Barcode Not Used"
             if order.retraction_id:
                 raise Exception, "Error: Barcode Already Scanned"
-            order_df, pieces = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
+            if order.discarded_time:
+                raise Exception, "Error: Barcode Already Discarded"
+            order_df, pieces, dutiable = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
             info['detail'] = "/".join(
                 map(lambda x:"%s(%s)" % (x[0], x[1]),
                     zip(order_df[u"内件名称"].map(lambda x:str(x)).tolist(),
                         order_df[u"数量"].map(lambda x:str(x)).tolist())))
             info['message'] = "%d Pieces, OK" % pieces
             info['pieces'] = pieces
+            info['dutiable'] = dutiable
             info['receiver_name'] = order.receiver_name
             info['receiver_id_number'] = order.receiver_id_number
             info['success'] = True
