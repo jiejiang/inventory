@@ -789,6 +789,43 @@ def generate_customs_df(route_config, version, package_df):
 
     return customs_df, ticket_info
 
+def generate_summary_wb(customs_df):
+
+    def summary_each_tax_code(group):
+        tax_code_column = group[u'商品编码'].unique()
+        assert(len(tax_code_column) == 1)
+        tax_code = tax_code_column[0]
+        return pd.Series({
+            u'序号': '',
+            u'商品编号': tax_code,
+            u'物品名称': '',
+            u'件数（纸箱）': len(group[u'分运单号'].unique()),
+            u'重量': group[u'毛重(KG)'].sum(),
+            u'数量': group[u'数量'].sum(),
+            u'单位': '',
+            u'币制': 'RMB',
+            u'价值': '',
+            u'备注': '',
+        })
+
+    columns = (u'序号', u'商品编号', u'物品名称', u'件数（纸箱）', u'重量', u'数量', u'单位', u'币制', u'价值', u'备注')
+    summary_df = customs_df.groupby(u'商品编码').apply(summary_each_tax_code)
+    summary_df = summary_df.reindex(columns=columns)
+    summary_df[u'序号'] = range(1, len(summary_df.index)+1)
+
+    summary_df = summary_df.append(summary_df.sum(numeric_only=True), ignore_index=True)
+    for key, value in ((u'序号', ''), (u'商品编号', u'合计')):
+        summary_df.iloc[-1, summary_df.columns.get_loc(key)] = value
+
+    wb = load_workbook(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'summary_header.xlsx'))
+    ws = wb[u'汇总清单']
+    row_count = 0
+    for r in dataframe_to_rows(summary_df, index=False, header=False):
+        row_count += 1
+        ws.append(r)
+
+    return wb
+
 def map_full_name_to_report_name(data_df, column_name):
     if not column_name in data_df.columns:
         raise Exception, "%s not in header" % column_name
@@ -995,6 +1032,9 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 del package_final_df["city"]
                 package_final_df.to_excel(os.path.join(
                     output, u"机场报关单.xlsx".encode('utf8')), index_label="NO")
+
+                summary_wb = generate_summary_wb(customs_final_df)
+                summary_wb.save(os.path.join(output, u"提单号+物品汇总清单.xlsx".encode('utf8')))
 
                 if os.path.exists(waybill_dir):
                     shutil.make_archive(waybill_dir, 'zip', waybill_dir)
