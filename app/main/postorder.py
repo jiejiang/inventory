@@ -150,6 +150,10 @@ ITEM_NAME_MAP_INFO = {
     },
 }
 
+TAX_CODE_MAP = {
+    '01010700': (u'奶粉', u'罐'),
+}
+
 
 def calculate_item_info(n_row, item_name, item_count):
     item_name = "".join(item_name.strip().split()).decode("utf8")
@@ -795,14 +799,15 @@ def generate_summary_wb(customs_df):
         tax_code_column = group[u'商品编码'].unique()
         assert(len(tax_code_column) == 1)
         tax_code = tax_code_column[0]
+        name, unit = TAX_CODE_MAP.get(tax_code, ('', ''))
         return pd.Series({
             u'序号': '',
             u'商品编号': tax_code,
-            u'物品名称': '',
+            u'物品名称': name,
             u'件数（纸箱）': len(group[u'分运单号'].unique()),
             u'重量': group[u'毛重(KG)'].sum(),
             u'数量': group[u'数量'].sum(),
-            u'单位': '',
+            u'单位': unit,
             u'币制': 'RMB',
             u'价值': '',
             u'备注': '',
