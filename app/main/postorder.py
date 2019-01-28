@@ -1031,7 +1031,7 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
                 generate_tickets(ticket_info, ticket_dir)
 
                 wb = remap_customs_df(customs_final_df)
-                wb.save(os.path.join(output, u"鹤山申报单.xlsx".encode('utf8')))
+                wb.save(os.path.join(output, u"西安申报单.xlsx".encode('utf8')))
 
                 del package_final_df["province"]
                 del package_final_df["city"]
