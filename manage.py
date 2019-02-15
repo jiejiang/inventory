@@ -39,9 +39,22 @@ if __name__ == '__main__':
             print "Not Found"
             exit(1)
         for city in cities:
-            print city.name, city.type
+            print city.id, city.name, city.type
         province, city, address_header = City.normalize_province_path(cities)
         print province, city, address_header
+
+    @manager.command
+    def change_city_name(id, old_name, new_name):
+        id = int(id)
+        city = City.query.get(id)
+        if not city:
+            print >> sys.stderr, "Cannot find city with id: %d" % id
+            return
+        if not city.name == old_name:
+            print >> sys.stderr, "City name %s mismatch: %s" % (city.name, old_name)
+            return
+        city.name = new_name
+        db.session.commit()
 
     @manager.command
     def batch(input, output, tmpdir):

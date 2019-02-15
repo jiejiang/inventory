@@ -3177,7 +3177,7 @@ INSERT INTO `db_yhm_city` VALUES (3165,375,'香格里拉县',3);
 INSERT INTO `db_yhm_city` VALUES (3166,375,'德钦县',3);
 INSERT INTO `db_yhm_city` VALUES (3167,375,'维西',3);
 INSERT INTO `db_yhm_city` VALUES (3168,376,'泸西县',3);
-INSERT INTO `db_yhm_city` VALUES (3169,376,'蒙自县',3);
+INSERT INTO `db_yhm_city` VALUES (3169,376,'蒙自市',3);
 INSERT INTO `db_yhm_city` VALUES (3170,376,'个旧市',3);
 INSERT INTO `db_yhm_city` VALUES (3171,376,'开远市',3);
 INSERT INTO `db_yhm_city` VALUES (3172,376,'绿春县',3);
