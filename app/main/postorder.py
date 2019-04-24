@@ -452,7 +452,9 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_gene
     receiver_address = in_row[u'收件人地址（无需包括省份和城市）']
     receiver_city = in_row[u'收件人城市（中文）']
     receiver_post_code = in_row[u'收件人邮编']
-    n_package = in_row[u'包裹数量']
+    n_package = in_row.get(u'物品种类数量', None)
+    if not n_package:
+        n_package = in_row.get(u'包裹数量', None)
     package_weight = in_row[u'包裹重量（公斤）']
     length = in_row[u'长（厘米）']
     width = in_row[u'宽（厘米）']
@@ -465,7 +467,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_gene
             raise Exception, u"第%d行数据不完整,请更正" % n_row
 
     if pd.isnull(n_package) or not isinstance(n_package, int) or n_package < 1:
-        raise Exception, u"第%d行包裹数量异常" % n_row
+        raise Exception, u"第%d行 物品种类数量 或者 包裹数量 异常" % n_row
 
     sender_name = "".join(sender_name.split())
     sender_address = "".join(sender_address.split())
@@ -579,6 +581,7 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None, test_m
         u'收件人手机号（11位数）': lambda x: str(x),
         u'身份证号(EMS需要)': lambda x: str(x),
         u'包裹数量': lambda x: int(x),
+        u'物品种类数量': lambda x: int(x),
     })
     if 'MAX_ORDER_PER_BATCH' in current_app.config \
             and len(in_df.index) > current_app.config['MAX_ORDER_PER_BATCH']:
