@@ -1042,14 +1042,17 @@ def retract_from_order_numbers(download_folder, order_numbers, output, route_con
     return package_final_df
 
 def is_dutiable(package_df, product_col, pieces):
-    duitable = False
+    dutiable = False
+    is_dutiable_category = False
     if pieces == 4:
-        duitable = True if package_df['dutiable_as_any_4_pieces'].any() else False
+        dutiable = True if package_df['dutiable_as_any_4_pieces'].any() else False
+        is_dutiable_category = package_df[product_col].str.contains(u'奶粉', regex=False).all(skipna=False)
     elif pieces == 6:
         # do use None value
-        duitable = False if package_df['non_dutiable_as_all_6_pieces'].all(skipna=False) \
+        dutiable = False if package_df['non_dutiable_as_all_6_pieces'].all(skipna=False) \
                             and len(package_df[product_col].unique()) == 1 else True
-    return duitable
+        is_dutiable_category = True
+    return dutiable, is_dutiable_category
 
 def load_order_info(download_folder, order, route_config):
     version = order.job.version if order.job.version else "v1"
@@ -1089,9 +1092,9 @@ def load_order_info(download_folder, order, route_config):
     product_info_df.rename(columns={'full_name': u'内件名称'}, inplace=True)
     sub_package_df = pd.merge(sub_package_df, product_info_df, on=u'内件名称')
 
-    dutiable = is_dutiable(sub_package_df, u'内件名称', pieces)
+    dutiable, is_dutiable_category = is_dutiable(sub_package_df, u'内件名称', pieces)
 
-    return sub_package_df, pieces, dutiable
+    return sub_package_df, pieces, dutiable, is_dutiable_category
 
 if __name__ == "__main__":
     parser = OptionParser()

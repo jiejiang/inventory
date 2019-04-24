@@ -9,6 +9,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
         $scope.barcodeStorage = new Object();
         $scope.receiverCount = new Object();
         $scope.dutiable_count = 0;
+        $scope.dutiable_category_count = 0;
         $scope.exportBarcodes = "";
         $scope.clearAlerts();
         $scope.running = false;
@@ -24,9 +25,8 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
     }
 
     $scope.dutiablePercentage = function () {
-        var barcode_size = $scope.barcode_size();
-        if (barcode_size > 0) {
-            return parseFloat($scope.dutiable_count * 100 / barcode_size).toFixed(1);
+        if ($scope.dutiable_category_count > 0) {
+            return parseFloat($scope.dutiable_count * 100 / $scope.dutiable_category_count).toFixed(1);
         }
         return 0
     }
@@ -104,8 +104,11 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
         if ($scope.receiverCount[id_number] > 0) {
             $scope.receiverCount[id_number] -= 1;
         }
-        if ($scope.barcodeStorage[barcode].dutiable) {
-            $scope.dutiable_count--;
+        if ($scope.barcodeStorage[barcode].is_dutiable_category) {
+            $scope.dutiable_category_count--;
+            if ($scope.barcodeStorage[barcode].dutiable) {
+                $scope.dutiable_count--;
+            }
         }
         delete $scope.barcodeStorage[barcode];
         if (index === $scope.validScan.length - 1) {
@@ -139,9 +142,11 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
                             $scope.getRejectClass = getActiveClass;
                         } else {
                             $scope.barcodeStorage[barcode] = data;
-                            console.log(data);
-                            if ($scope.barcodeStorage[barcode].dutiable) {
-                                $scope.dutiable_count++;
+                            if ($scope.barcodeStorage[barcode].is_dutiable_category) {
+                                $scope.dutiable_category_count++;
+                                if ($scope.barcodeStorage[barcode].dutiable) {
+                                    $scope.dutiable_count++;
+                                }
                             }
                             $scope.validScan.push({barcode:barcode, prompt:data.message});
                             message = data.message;
@@ -238,8 +243,11 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
                         var scan = data[i];
                         $scope.barcodeStorage[scan.barcode] = scan;
                         console.log(scan);
-                        if ($scope.barcodeStorage[scan.barcode].dutiable) {
-                            $scope.dutiable_count++;
+                        if ($scope.barcodeStorage[scan.barcode].is_dutiable_category) {
+                            $scope.dutiable_category_count++;
+                            if ($scope.barcodeStorage[scan.barcode].dutiable) {
+                                $scope.dutiable_count++;
+                            }
                         }
                         if (!$scope.receiverCount.hasOwnProperty(scan.receiver_id_number)) {
                             $scope.receiverCount[scan.receiver_id_number] = 0;

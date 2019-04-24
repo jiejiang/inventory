@@ -227,10 +227,12 @@ class RetractionAPI(Resource):
                         assert (len(receiver) == 1)
                         id_number = row[u'备注'].unique()
                         assert (len(id_number) == 1)
+                        dutiable, is_dutiable_category = is_dutiable(row, u'内件名称', row[u"数量"].sum())
                         return pd.Series({
                             'message': '%s Pieces, OK' % row[u"数量"].sum(), 'receiver_name': receiver[0],
                             'receiver_id_number': id_number[0], 'pieces': row[u"数量"].sum(),
-                            'dutiable': is_dutiable(row, u'内件名称', row[u"数量"].sum()),
+                            'dutiable': dutiable,
+                            'is_dutiable_category': True if is_dutiable_category else False,
                             'detail': "/".join(map(lambda x: "%s(%s)" % (x[0], x[1]), zip(row[u"内件名称"], row[u"数量"]))),
                         })
 
@@ -372,7 +374,7 @@ class OrderInfoAPI(Resource):
                 raise Exception, "Error: Barcode Already Scanned"
             if order.discarded_time:
                 raise Exception, "Error: Barcode Already Discarded"
-            order_df, pieces, dutiable = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
+            order_df, pieces, dutiable, is_dutiable_category = load_order_info(current_app.config['DOWNLOAD_FOLDER'], order, route_config)
             info['detail'] = "/".join(
                 map(lambda x:"%s(%s)" % (x[0], x[1]),
                     zip(order_df[u"内件名称"].map(lambda x:str(x)).tolist(),
@@ -380,6 +382,7 @@ class OrderInfoAPI(Resource):
             info['message'] = "%d Pieces, OK" % pieces
             info['pieces'] = pieces
             info['dutiable'] = dutiable
+            info['is_dutiable_category'] = True if is_dutiable_category else False
             info['receiver_name'] = order.receiver_name
             info['receiver_id_number'] = order.receiver_id_number
             info['success'] = True
