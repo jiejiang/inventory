@@ -1,0 +1,69 @@
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">补充订单号 (输入Excel必须包含"西安单号"列)</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="col-lg-4 col-md-4">
+            <span class="btn btn-file btn-lg btn-block btn-warning pull-right">
+                <i class="fa fa-upload"></i>&nbsp;上传新订单号 Excel
+                <input ngf-select type="file" ng-model="file">
+            </span>
+        </div>
+
+        <div class="col-lg-8 col-md-8" ng-show="upload_file">
+        <li style="display:block;">
+            <p>
+                <strong>{[upload_file.name]}</strong>
+            </p>
+            <div class="progress">
+                <div class="progress-bar progress-bar-active" role="progressbar" aria-valuenow="{[upload_file.percentage]}" aria-valuemin="0" aria-valuemax="100" style="width: {[upload_file.percentage]}%">
+                    <span>Uploading -- {[upload_file.percentage]}%</span>
+                </div>
+                </div>
+            </li>
+        </div>
+    </div>
+</div>
+
+<div class="row"  ng-show="running">
+    <div class="col-lg-12 col-md-12 center">
+        <i class="fa fa-spinner fa-spin fa-5x"></i>
+        <h1>进行中...</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <uib-accordion close-others="false">
+            <uib-accordion-group is-open="false" ng-show="invalid_order_numbers.length" class="panel-danger">
+                <uib-accordion-heading>
+                    无法添加如下无效订单号: {[invalid_order_numbers.length]}个
+                </uib-accordion-heading>
+                <ol>
+                    <li ng-repeat="order_number in invalid_order_numbers">{[order_number]}</li>
+                </ol>
+            </uib-accordion-group>
+
+            <uib-accordion-group is-open="false" ng-show="existing_order_numbers.length" class="panel-danger">
+                <uib-accordion-heading>
+                    无法添加如下已经存在的订单号: {[existing_order_numbers.length]}个
+                </uib-accordion-heading>
+                <ol>
+                    <li ng-repeat="order_number in existing_order_numbers">{[order_number]}</li>
+                </ol>
+            </uib-accordion-group>
+
+            <uib-accordion-group is-open="false" ng-repeat="(type_name, number_list) in inserted_order_numbers" ng-show="number_list.length" class="panel-info">
+                <uib-accordion-heading>
+                    成功添加 <b>{[type_name]}</b> 订单号: {[number_list.length]}个
+                </uib-accordion-heading>
+                <ol>
+                    <li ng-repeat="order_number in number_list">{[order_number]}</li>
+                </ol>
+            </uib-accordion-group>
+        </uib-accordion>
+    </div>
+</div>

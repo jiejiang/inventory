@@ -1,0 +1,7 @@
+{% extends 'admin/model/list.html' %}
+{% block list_row_actions %} 
+    {{ super() }}
+    <a href="{{ url_for('main.download_retraction_file', retraction_id=get_pk_value(row)) }}" target="_blank">
+        <span class="glyphicon glyphicon-cloud-download" aria-hidden="true"></span>
+    </a>
+{% endblock %}

@@ -1,0 +1,116 @@
+<html>
+    <head>
+         <link rel="help" href="http://www.w3.org/TR/CSS21/tables.html#table-layout">
+    </head>
+    <body>
+        <div>
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:180pt; font-size:200%; text-align: center"><strong>快递包裹</strong></td>
+                        <td style="padding-left: 1em; padding-right:1em; text-align: center">
+                            <img src="{{top_image}}" style="width:100%">
+                            <span style="font-weight: bold">{{ticket_number}}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:60%"><strong>寄件人/From：</strong> <span style="font-size:75%">UC Trading Ltd, Manchester</span><br>{{sender_name}}</td>
+                        <td style="vertical-align:top;"><strong>进口口岸：</strong> 西安</span><br><strong>电话：</strong> {{sender_phone}}</td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; height: 70px;" colspan="2"><strong>地址：</strong>{{sender_address}}</td>
+                    </tr>
+                    <tr style="font-size: 55%; text-align: right">
+                        <td></td>
+                        <td>下单时间：{{time.strftime('%Y-%m-%d')}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:60%"><strong>收件人/To：</strong> {{receiver_name}}</td>
+                        <td><strong>电话：</strong> {{receiver_mobile}}</span></td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; height: 100px;" colspan="2"><strong>地址：</strong>{{full_address}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:60%; vertical-align:top; height: 150px;"><strong>货物内容描述：</strong><br>{{item_names}}</td>
+                        <td style="vertical-align:top; border-left:2px solid"><strong>实际重量：</strong>{{package_weight}} KG<br><br><strong>原产地：</strong>英国</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:40%;">收件人签名：</td>
+                        <td>
+                            <span>签收时间：</span>
+                            <span style="padding-left: 60px">年</span>
+                            <span style="padding-left: 30px">月</span>
+                            <span style="padding-left: 30px">日</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:75%; padding-left: 1em; padding-right:1em; text-align: center">
+                            <img src="{{bot_image}}" style="width:100%">
+                            <span style="font-weight: bold">{{ticket_number}}</span>
+                        </td>
+                        <td style="text-align: center; border-left:2px solid">
+                            <span style="font-size:180%; font-weight: bold">已检视</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:60%"><strong>收件人/To：</strong> {{receiver_name}}</td>
+                        <td><strong>电话：</strong> {{receiver_mobile}}</span></td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align:top; height: 100px;" colspan="2"><strong>地址：</strong>{{full_address}}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td colspan="2" style="font-size:70%">退件地址：咸阳机场货运站中国邮政处理中心 029-32065355&nbsp;&nbsp;&nbsp;&nbsp;退件联系人: 梁先生</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <table>
+                <tbody>
+                    <tr>
+                        <td style="width:60%;vertical-align:top;"><strong>关联单号箱号：</strong><br><strong>已检视：</strong></td>
+                        <td style="border-left:2px solid; text-align: center;">
+                            <img src="static/img/ygt.jpg" style="height:60px">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,170 @@
+<div class="row top-mini-buffer">
+    <div class="col-lg-12">
+        <h1 class="page-header">Scan Barcode: 报税比例: {[dutiablePercentage()]}%  <small>({[dutiable_count]} / {[dutiable_category_count]})</small></h1>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="col-lg-3 col-md-3">
+        <div class="input-group top-mini-buffer">
+            <span class="input-group-addon" popover-trigger="mouseenter" popover-placement="bottom" popover="Route Choice">
+                <i class="fa fa-truck fa-fw"></i></span>
+            <select class="form-control" ng-model="route" ng-change="onSelectRoute()">
+                <option value="">--------</option>
+                <option value="cc">CC Route</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-3" ng-show="route">
+
+        <div class="input-group top-mini-buffer">
+          <span class="input-group-addon" id="basic-addon1"><i class="fa fa-barcode"></i> </span>
+          <input type="text" class="form-control" placeholder="Click here and start scan"
+                 aria-describedby="basic-addon1" ng-keypress="barcodeKeyPressed($event)" ng-model="barcode"
+                 ng-focus="scan_mode=true" ng-blur="scan_mode=false" ng-init="scan_mode=false">
+        </div>
+    </div>
+
+    <div class="col-lg-2 col-md-2" ng-show="route">
+        <span class="btn btn-file btn-lg btn-block btn-default">
+            <i class="fa fa-upload"></i>&nbsp;Import File
+            <input ngf-select type="file" ng-model="file">
+        </span>
+    </div>
+
+    <div class="col-lg-2 col-md-2" ng-show="validScan.length">
+        <form action="{[submit_url]}" method="POST" target="_blank" ng-submit="onSubmit()">
+            <input name="barcodes" value="" ng-model="exportBarcodes" style="display:none">
+            <button class="btn btn-primary btn-block btn-lg"><i class="fa fa-file-excel-o fa-fw"></i>&nbsp;Export File</button>
+        </form>
+    </div>
+
+    <div class="col-lg-2 col-md-2" ng-show="validScan.length || invalidScan.length || preScansList.length">
+        <a ng-click="onReset()" class="btn btn-warning btn-block btn-lg"><i class="fa fa-trash-o fa-fw"></i>&nbsp;Reset</a>
+    </div>
+</div>
+
+<div class="row" ng-show="running">
+    <div class="col-lg-12 col-md-12 center">
+        <i class="fa fa-spinner fa-spin fa-5x"></i>
+        <h1>Waiting...</h1>
+    </div>
+</div>
+
+<div id="non-scan" ng-show="scan_mode==false">
+    <h1 class="text-danger text-center"><i class="fa fa-ban fa-spin"></i>
+        WARNING: NOT IN SCAN MODE <i class="fa fa-ban fa-spin"></i></h1>
+</div>
+
+<hr/>
+
+<div class="row" ng-show="route">
+    <div class="col-lg-8">
+        <div class="row">
+            <div class="panel panel-success">
+                <div class="panel-heading">
+                    Accepted Scan
+                </div>
+                <div class="panel-body" ng-show="validScan.length">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Barcode</th>
+                                    <th>Name</th>
+                                    <th>ID Card</th>
+                                    <th>Detail</th>
+                                    <th>Prompt</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="success" ng-repeat="scan in validScan | orderBy:'-' track by $index" ng-class="getAcceptClass($index)">
+                                    <td>{[validScan.length - $index]}</td>
+                                    <td>{[scan.barcode]}</td>
+                                    <td>{[barcodeStorage[scan.barcode].receiver_name]}</td>
+                                    <td>{[barcodeStorage[scan.barcode].receiver_id_number]}</td>
+                                    <td>{[barcodeStorage[scan.barcode].detail]}</td>
+                                    <td>{[scan.prompt]}</td>
+                                    <td><a class="btn btn-warning btn-xs" ng-click="removeValidScan(validScan.length - $index - 1)"><i class="fa fa-trash-o"></i></a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" ng-repeat="preScans in preScansList | orderBy:'-' track by $index">
+            <div class="panel panel-default">
+                <div class="panel-heading" ng-click="togglePreScans(preScansList.length - $index - 1)">
+                    Uploaded #{[preScansList.length - $index]} -- {[preScans.name]} -- (Total barcodes: {[preScans.scans.length]})
+                    <span class="pull-right"><i class="fa {[preScans.visible ? 'fa-minus' : 'fa-plus']}" aria-hidden="true"></i></span>
+                </div>
+                <div class="panel-body" ng-show="preScans.visible">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Barcode</th>
+                                    <th>Name</th>
+                                    <th>ID Card</th>
+                                    <th>Detail</th>
+                                    <th>Prompt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="default" ng-repeat="scan in preScans.scans track by $index">
+                                    <td>##{[preScans.scans.length - $index]}</td>
+                                    <td>{[scan.barcode]}</td>
+                                    <td>{[scan.receiver_name]}</td>
+                                    <td>{[scan.receiver_id_number]}</td>
+                                    <td>{[scan.detail]}</td>
+                                    <td>{[scan.message]}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="panel panel-danger">
+            <div class="panel-heading">
+                Rejected Scan
+            </div>
+            <div class="panel-body" ng-show="invalidScan.length">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Prompt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="danger" ng-repeat="scan in invalidScan | orderBy:'-'" ng-class="getRejectClass($index)">
+                                <td>{[scan.barcode]}</td>
+                                <td>{[scan.prompt]}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr/>
+
+<div class="row">
+    <div class="col-lg-4">
+        <a class="btn btn-info btn-block btn-lg" ng-click="playAudio('Test Speaker Volume')">
+            <i class="fa fa-volume-up fa-fw"></i>&nbsp; Test Speaker Volume</a>
+    </div>
+</div>

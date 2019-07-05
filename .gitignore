@@ -1,0 +1,16 @@
+*.pyc
+*~
+data
+.idea
+tmp
+test
+venv
+/upload
+/download
+/retraction
+app/static/.webassets-cache/
+app/bower_components
+instance/local_config.py
+logs
+/tts
+*.log

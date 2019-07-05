@@ -1,0 +1,23 @@
+DEBUG = True
+
+UPLOAD_FOLDER = 'upload'
+
+DOWNLOAD_FOLDER = 'download'
+
+RETRACTION_FOLDER = 'retraction'
+
+SQLALCHEMY_TRACK_MODIFICATIONS = True
+
+SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://postgres:postgres@localhost/yunda'
+
+BATCH_ORDER_QUEUE = 'batch_order_yunda'
+
+ROUTE_PREFIX = 'yunda'
+
+SECRET_KEY = "rb*g5!xeo%byd0is@yzg7cuo(cp9g-^5lz*)in@x%=8+d$x@u="
+
+USER_ENABLE_CHANGE_PASSWORD = False
+USER_ENABLE_CHANGE_USERNAME = False
+USER_ENABLE_REGISTRATION = False
+USER_ENABLE_FORGOT_PASSWORD = False
+USER_APP_NAME = "Yunda"

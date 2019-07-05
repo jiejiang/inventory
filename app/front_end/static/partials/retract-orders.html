@@ -1,0 +1,71 @@
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">提取订单 (输入Excel必须包含"提取单号"列)</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-3 col-md-3">
+        <div class="input-group">
+            <span class="input-group-addon" popover-trigger="mouseenter" popover-placement="bottom" popover="线路选择"><i class="fa fa-truck fa-fw"></i></span>
+            <select class="form-control" ng-model="route" >
+                <option value="">--------</option>
+                <option value="cc">CC线</option>
+            </select>
+        </div>
+        <div ng-show="route">
+            <input type="checkbox" ng-model="is_redo">重新提取（如果你不明白该选项的作用，请不要选取）
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-3" ng-show="route">
+        <span class="btn btn-file btn-lg btn-block btn-primary pull-right">
+            <i class="fa fa-upload"></i>&nbsp;上传单号 Excel
+            <input ngf-select type="file" ng-model="file">
+        </span>
+    </div>
+
+    <div class="col-lg-3 col-md-3" ng-show="upload_file">
+    <li style="display:block;">
+        <p>
+            <strong>{[upload_file.name]}</strong>
+        </p>
+        <div class="progress">
+            <div class="progress-bar progress-bar-active" role="progressbar" aria-valuenow="{[upload_file.percentage]}" aria-valuemin="0" aria-valuemax="100" style="width: {[upload_file.percentage]}%">
+                <span>Uploading -- {[upload_file.percentage]}%</span>
+            </div>
+            </div>
+        </li>
+    </div>
+
+    <div class="col-md-3" ng-show="retraction_id">
+        <a class="btn btn-warning btn-block btn-lg" ng-href="{[api_prefix]}/retract-orders?id={[retraction_id]}" target="_blank"><i class="fa fa-download"></i>&nbsp;下载 Zip</a>
+    </div>
+</div>
+
+<div class="row" ng-show="running">
+    <div class="col-lg-12 col-md-12 center">
+        <i class="fa fa-spinner fa-spin fa-5x"></i>
+        <h1>进行中...</h1>
+    </div>
+</div>
+
+<div class="row" ng-show="order_numbers.length">
+    <div class="col-lg-12">
+        <uib-accordion close-others="false">
+            <uib-accordion-group is-open="false" class="panel-info">
+                <uib-accordion-heading>
+                    提取订单行数: {[order_numbers.length]}个
+                </uib-accordion-heading>
+                <ol>
+                    <li ng-repeat="order_number in order_numbers">{[order_number]}</li>
+                </ol>
+            </uib-accordion-group>
+
+        </uib-accordion>
+    </div>
+</div>
+
+<hr/>
+
+<div ng-include src="'static/partials/_stats.html'"></div>

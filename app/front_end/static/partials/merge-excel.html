@@ -1,0 +1,29 @@
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">合并提取结果 (按住Shift或Ctrl选取在同一个目录下的文件)</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="col-lg-6 col-md-6">
+
+
+            <form action="{[submit_url]}" class="form-horizontal" method="post" enctype="multipart/form-data"
+                  ng-submit="onSubmit()">
+
+                <div id="div_id_files" class="form-group">
+                    <label for="id_files" class="control-label col-lg-6 requiredField">
+                        选择多个Excel文件<span class="asteriskField">*</span> </label> <div class="controls col-lg-6">
+                    <input class="clearablefileinput" id="id_files" name="files" type="file" multiple required /> </div>
+                </div>
+                <div class="buttonHolder">
+                    <input type="submit" name="submit" value="点击开始合并"
+                           class="btn btn-primary btn btn-success btn-lg btn-block" id="submit-id-submit"/>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
