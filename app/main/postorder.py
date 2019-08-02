@@ -424,7 +424,9 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
         filename, stylesheets=["static/css/style.css"])
 
 
-def fetch_ticket_number(n_row, receiver_city):
+def fetch_ticket_number(context):
+    n_row = context['n_row']
+    receiver_city = context['receiver_city']
     city_name = "".join(receiver_city.strip().split())
     cities = City.find_province_path(city_name)
     if not cities:
@@ -434,11 +436,13 @@ def fetch_ticket_number(n_row, receiver_city):
         raise Exception, "Post to province %s is not supported: %s at row %d" % (
             city_name, n_row)
     info = PROVINCE_INFO_MAP[cities[0].name]
+    province_name, municipal_name, address_header = City.normalize_province_path(
+        cities)
+
     order = Order.pick_unused()
     if order is None:
         raise Exception, u"订单号不足"
-    province_name, municipal_name, address_header = City.normalize_province_path(
-        cities)
+
     return info['package_type'], order, province_name, municipal_name, address_header
 
 
@@ -480,7 +484,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_gene
     id_number = "".join(id_number.split())
 
     package_type, order, receiver_province, receiver_municipal, receiver_address_header = \
-        fetch_ticket_number(n_row, receiver_city)
+        fetch_ticket_number(locals())
     receiver_city = receiver_municipal
     receiver_address = receiver_address_header + receiver_address
 
