@@ -17,7 +17,7 @@ batch_order_queue = app.config['BATCH_ORDER_QUEUE']
 
 
 @job(batch_order_queue)
-def batch_order(job_id, input_file, workdir, test_mode=False):
+def batch_order(job_id, input_file, workdir, order_type, test_mode=False):
     with app.app_context():
         job = Job.query.filter(Job.uuid == job_id).first()
         outfile = os.path.join(workdir, job_id + '.zip')
@@ -43,7 +43,7 @@ def batch_order(job_id, input_file, workdir, test_mode=False):
                     job.percentage = percent
                     # db.session.commit()
 
-            xls_to_orders(input_file, outdir, tmpdir, percent_callback, job, test_mode)
+            xls_to_orders(input_file, outdir, tmpdir, order_type, percent_callback, job, test_mode)
 
             outfile = os.path.abspath(outfile)
             os.chdir(outdir)

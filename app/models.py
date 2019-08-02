@@ -283,10 +283,14 @@ class Order(db.Model):
     discarded_time = db.Column(db.DateTime, nullable=True, default=None)
 
     class Type:
-        XIAN = 1
+        CNPOST = 1
+        BEUK = 2
+        YUANTONG = 3
 
         types = {
-            XIAN : u"西安单号",
+            CNPOST : u"邮政单号",
+            BEUK : u'BEUK单号',
+            YUANTONG : u'圆通单号',
         }
 
     def discard(self):
@@ -315,7 +319,8 @@ class Order(db.Model):
 
     @staticmethod
     def is_order_number_valid(type, order_number):
-        return type == Order.Type.XIAN and re.match(r"^\d+$", order_number)
+        return (type == Order.Type.CNPOST and re.match(r"^\d+$", order_number)) or \
+               (type == Order.Type.BEUK and re.match(r"^[a-zA-Z]+$", order_number))
 
     @staticmethod
     def pick_first(type):

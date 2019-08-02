@@ -39,7 +39,7 @@ postOrdersApp.controller('Frame', ['$scope', '$location', '$window', '$filter', 
                     var alerted = false;
                     angular.forEach(alert_thresholds, function(v, k){
                         var cookie_key = key + v;
-                        if (value.unused < v) {
+                        if (value.unused < v && key !== "圆通单号") {
                             if (!alerted) {
                                 if (typeof($cookies.get(cookie_key)) === 'undefined') {
                                     $window.alert("提醒: " + key + ' 不足' + v + ", 请尽快上载!");

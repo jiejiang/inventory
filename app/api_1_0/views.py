@@ -46,6 +46,9 @@ class BatchOrderListAPI(Resource):
 
         issuer = request.form['issuer'] if 'issuer' in request.form else None
         test_mode = request.form['test_mode'] if 'test_mode' in request.form else False
+        order_type = int(request.form['order_type']) if 'order_type' in request.form else Order.Type.CNPOST
+        if not order_type in Order.Type.types:
+            abort(500, message=u'order_type无效%d' % order_type)
 
         file = request.files['file']
         if file:
@@ -65,7 +68,7 @@ class BatchOrderListAPI(Resource):
                 if not os.path.exists(workdir):
                     os.makedirs(workdir)
 
-                batch_order.delay(job.uuid, save_filename, workdir, test_mode=test_mode)
+                batch_order.delay(job.uuid, save_filename, workdir, order_type, test_mode=test_mode)
 
                 return wrap_json_response({'id': job.uuid, })
             except ConnectionError, inst:
@@ -140,7 +143,8 @@ class OrderListAPI(Resource):
                     inserted_order_numbers[type_string] = []
                     if type_string in df.columns:
                         found = True
-                        for order_number in df[type_string]:
+                        for order_number in df[~df[type_string].isnull()][type_string]:
+                            print order_number
                             order_number = str(order_number).strip()
                             if order_number:
                                 if not Order.is_order_number_valid(type_int, order_number):

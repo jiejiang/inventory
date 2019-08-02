@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import cStringIO, json
+import cStringIO, json, uuid
 import re, math, random
 import sys
 import os
@@ -28,6 +28,7 @@ from unidecode import unidecode
 from ..models import City, Order, ProductInfo
 from .. import db
 from ..util import time_to_filename
+from .yuantong import fetch_order_number as fetch_yuantong_order_number
 
 Code128 = barcode.get_barcode_class('code128')
 
@@ -372,7 +373,7 @@ def generate_tickets(ticket_info, ticket_dir, suffix='.jpg'):
     print >> sys.stderr, "%d tickets generated" % generated_count
 
 
-def generate_pdf(ticket_number, filename, context, tmpdir):
+def generate_pdf(ticket_number, filename, context, tmpdir, order_type):
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
 
@@ -411,7 +412,10 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
         raise Exception, "Image failed to create"
 
     env = Environment(loader=FileSystemLoader('templates'))
-    template = env.get_template('barcode_fast_track.html')
+    template = env.get_template(
+        'barcode_yuantong.html' if order_type == Order.Type.YUANTONG else
+        'barcode_fast_track.html'
+    )
     context['time'] = datetime.datetime.now()
     context['bot_image'] = bot_image
     context['top_image'] = top_image
@@ -424,9 +428,8 @@ def generate_pdf(ticket_number, filename, context, tmpdir):
         filename, stylesheets=["static/css/style.css"])
 
 
-def fetch_ticket_number(context):
-    n_row = context['n_row']
-    receiver_city = context['receiver_city']
+def fetch_ticket_number(n_row, parameters, pre_check=False):
+    receiver_city = parameters['receiver_city']
     city_name = "".join(receiver_city.strip().split())
     cities = City.find_province_path(city_name)
     if not cities:
@@ -438,15 +441,37 @@ def fetch_ticket_number(context):
     info = PROVINCE_INFO_MAP[cities[0].name]
     province_name, municipal_name, address_header = City.normalize_province_path(
         cities)
+    parameters['province_name'] = province_name
+    parameters['municipal_name'] = municipal_name
+    parameters['address_header'] = address_header
 
-    order = Order.pick_unused()
-    if order is None:
-        raise Exception, u"订单号不足"
+    distribute_code = None
+    if not parameters.get('ticket_number_generator', None) and not pre_check:
+        order_type = parameters.get('order_type', None)
+        if order_type == Order.Type.YUANTONG:
+            try:
+                order = Order()
+                order.type = Order.Type.YUANTONG
+                order.uuid = str(uuid.uuid4())
+                order.order_number, distribute_code = \
+                    fetch_yuantong_order_number(current_app.config['YUANTONG_CONFIG'], parameters)
+                db.session.add(order)
+                db.session.commit()
+            except Exception as inst:
+                import traceback
+                traceback.print_exc(sys.stderr)
+                raise Exception, u"圆通订单错误: %s" % str(inst)
+        else:
+            order = Order.pick_first(order_type)
+        if order is None:
+            raise Exception, u"订单号不足"
+    else:
+        order = Order()
 
-    return info['package_type'], order, province_name, municipal_name, address_header
+    return info['package_type'], order, province_name, municipal_name, address_header, distribute_code
 
 
-def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_generator=None):
+def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket_number_generator=None, pre_check=False):
     p_data = []
     sender_name = in_row[u'发件人名字']
     sender_phone = in_row[u'发件人电话号码']
@@ -483,8 +508,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_gene
     receiver_post_code = "".join(receiver_post_code.split())
     id_number = "".join(id_number.split())
 
-    package_type, order, receiver_province, receiver_municipal, receiver_address_header = \
-        fetch_ticket_number(locals())
+    package_type, order, receiver_province, receiver_municipal, receiver_address_header, distribute_code = \
+        fetch_ticket_number(n_row, locals(), pre_check)
     receiver_city = receiver_municipal
     receiver_address = receiver_address_header + receiver_address
 
@@ -493,19 +518,23 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_gene
         pc_text) <= 10 else "2.5" if len(pc_text) <= 15 else "2"
 
     if not ticket_number_generator:
-        order.used = True
-        order.used_time = datetime.datetime.utcnow()
-        order.sender_address = ", ".join(
-            (sender_name, sender_address, sender_phone))
-        order.receiver_address = ", ".join(
-            (receiver_address, receiver_city, receiver_post_code))
-        order.receiver_mobile = receiver_mobile
-        order.receiver_id_number = id_number
-        order.receiver_name = receiver_name
-        if job:
+        if job and not pre_check:
+            order.used = True
+            order.used_time = datetime.datetime.utcnow()
+            order.sender_address = ", ".join(
+                (sender_name, sender_address, sender_phone))
+            order.receiver_address = ", ".join(
+                (receiver_address, receiver_city, receiver_post_code))
+            order.receiver_mobile = receiver_mobile
+            order.receiver_id_number = id_number
+            order.receiver_name = receiver_name
             order.job = job
             job.version = "v3"
+
         ticket_number = order.order_number
+
+        if not pre_check:
+            db.session.commit()
     else:
         ticket_number = ticket_number_generator.next()
     full_address = "".join(filter(
@@ -560,8 +589,9 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, job=None, ticket_number_gene
 
     item_names = ", ".join(item_names)
 
-    generate_pdf(ticket_number, os.path.join(
-        barcode_dir, '%s.pdf' % ticket_number), locals(), tmpdir)
+    if not pre_check:
+        generate_pdf(ticket_number, os.path.join(
+            barcode_dir, '%s.pdf' % ticket_number), locals(), tmpdir, order_type)
 
     return ticket_number, pd.DataFrame(p_data, columns=[
         u'快件单号', u'发件人', u'发件人地址', u'电话号码', u'收件人', u'电话号码.1', u'城市',
@@ -574,7 +604,7 @@ def normalize_columns(in_df):
     in_df.columns = map(lambda x: "".join(x.strip().split()), in_df.columns)
 
 
-def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None, test_mode=False):
+def xls_to_orders(input, output, tmpdir, order_type, percent_callback=None, job=None, test_mode=False):
     if percent_callback:
         percent_callback(0)
     in_df = pd.read_excel(input, converters={
@@ -618,9 +648,16 @@ def xls_to_orders(input, output, tmpdir, percent_callback=None, job=None, test_m
         test_ticket_number_generator = ticket_number_generator()
         if job:
             job.version = "test_mode"
+
+    # precheck to avoid yuantong api on invalid data
+    if order_type == Order.Type.YUANTONG:
+        for index, in_row in in_df.iterrows():
+            ticket_number, p_data = process_row(
+                index, in_row, barcode_dir, tmpdir, order_type, job, test_ticket_number_generator, pre_check=True)
+
     for index, in_row in in_df.iterrows():
         ticket_number, p_data = process_row(
-            index, in_row, barcode_dir, tmpdir, job, test_ticket_number_generator)
+            index, in_row, barcode_dir, tmpdir, order_type, job, test_ticket_number_generator)
         if ticket_number in ticket_number_set:
             raise Exception, u"同批次单号%s重复，请联系客服！" % ticket_number
         ticket_number_set.add(ticket_number)

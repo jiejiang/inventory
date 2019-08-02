@@ -57,11 +57,14 @@ if __name__ == '__main__':
         db.session.commit()
 
     @manager.command
-    def batch(input, output, tmpdir):
+    def batch(input, output, tmpdir, order_type):
         if not os.path.exists(output):
             os.makedirs(output)
         try:
-            xls_to_orders(input, output, tmpdir)
+            order_type = int(order_type)
+            if not order_type in Order.Type.types:
+                raise Exception, "Invalid order type: %d" % order_type
+            xls_to_orders(input, output, tmpdir, order_type)
         except Exception, inst:
             import traceback
             traceback.print_exc(sys.stderr)
