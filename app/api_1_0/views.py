@@ -46,9 +46,13 @@ class BatchOrderListAPI(Resource):
 
         issuer = request.form['issuer'] if 'issuer' in request.form else None
         test_mode = request.form['test_mode'] if 'test_mode' in request.form else False
-        order_type = int(request.form['order_type']) if 'order_type' in request.form else Order.Type.CNPOST
-        if not order_type in Order.Type.types:
-            abort(500, message=u'order_type无效%d' % order_type)
+        route = request.form['route'] if 'route' in request.form else None
+        if route:
+            order_type = Order.Type.route_as_type(route)
+            if not order_type:
+                abort(500, message=u'route 无效%d' % route)
+        else:
+            order_type = Order.Type.DEFAULT_TYPE
 
         file = request.files['file']
         if file:

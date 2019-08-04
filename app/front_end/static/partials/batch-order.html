@@ -9,16 +9,16 @@
         <div class="col-lg-3 col-md-3">
             <div class="input-group top-mini-buffer">
                 <span class="input-group-addon" popover-trigger="mouseenter" popover-placement="bottom" popover="单号选择"><i class="fa fa-book fa-fw"></i></span>
-                <select class="form-control" ng-model="order_type" ng-change="onSelectOrderType()">
+                <select class="form-control" ng-model="route" ng-change="onSelectRoute()">
                     <option value="">--------</option>
-                    <option value="1">邮政线</option>
-                    <option value="2">BEUK线</option>
-                    <option value="3">圆通线</option>
+                    <option value="cnpost">邮政线</option>
+                    <option value="beuk">BEUK线</option>
+                    <option value="yuantong">圆通线</option>
                 </select>
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-3" ng-show="order_type">
+        <div class="col-lg-3 col-md-3" ng-show="route">
             <span class="btn btn-file btn-lg btn-block btn-success pull-right">
                 <i class="fa fa-upload"></i>&nbsp;上传客户 Excel
                 <input ngf-select type="file" ng-model="file">

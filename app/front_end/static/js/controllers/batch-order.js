@@ -4,7 +4,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
     function($scope, Upload, BatchOrderJob, $location, $timeout, $window, $log, Restangular) {
 
     $scope.initialize = function () {
-        $scope.order_type = '';
+        $scope.route = '';
         $scope.job = BatchOrderJob;
         $scope.running = false;
     };
@@ -14,7 +14,8 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
     $scope.query_stats();
 
     $scope.onSelectRoute = function () {
-        $scope.initialize();
+        $scope.job = BatchOrderJob;
+        $scope.running = false;
     };
 
     $scope.$watch('file', function () {
@@ -33,7 +34,7 @@ postOrdersApp.controller('BatchOrder', ['$scope', 'Upload', 'BatchOrderJob', '$l
                 Upload.upload({
                     url: $scope.$parent.api_prefix + '/batch-order',
                     file: file,
-                    data: {order_type: $scope.order_type},
+                    data: {route: $scope.route},
                 }).progress(function (evt) {
                     $scope.job.upload_file.percentage = parseInt(100.0 * evt.loaded / evt.total);
                 }).success(function (data, status, headers, config) {

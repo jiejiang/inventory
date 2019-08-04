@@ -287,11 +287,23 @@ class Order(db.Model):
         BEUK = 2
         YUANTONG = 3
 
+        DEFAULT_TYPE = CNPOST
+
         types = {
             CNPOST : u"邮政单号",
             BEUK : u'BEUK单号',
             YUANTONG : u'圆通单号',
         }
+
+        route2type = {
+            'cnpost': CNPOST,
+            'beuk': BEUK,
+            'yuantong': YUANTONG,
+        }
+
+        @classmethod
+        def route_as_type(cls, route):
+            return cls.route2type.get(route, None)
 
     def discard(self):
         if self.retraction_id:
