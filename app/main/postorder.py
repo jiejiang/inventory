@@ -456,7 +456,7 @@ def fetch_ticket_number(n_row, parameters, pre_check=False):
                 order.order_number, distribute_code = \
                     fetch_yuantong_order_number(current_app.config['YUANTONG_CONFIG'], parameters)
                 db.session.add(order)
-                db.session.commit()
+                #db.session.commit()
             except Exception as inst:
                 import traceback
                 traceback.print_exc(sys.stderr)
@@ -539,7 +539,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
         ticket_number = order.order_number
 
         if not pre_check:
-            db.session.commit()
+            #db.session.commit()
+            pass
     else:
         ticket_number = ticket_number_generator.next()
     full_address = "".join(filter(
