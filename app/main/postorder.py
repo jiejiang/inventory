@@ -489,6 +489,9 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
     width = in_row[u'宽（厘米）']
     height = in_row[u'高（厘米）']
     id_number = in_row[u'身份证号(EMS需要)']
+    external_package_no = in_row.get('EXTERNAL_PACKAGE_NO', None)
+    if pd.isnull(external_package_no):
+        external_package_no = None
 
     for check_field in (sender_name, sender_phone, sender_address, receiver_name, receiver_mobile, receiver_address,
                         receiver_city, receiver_post_code, id_number):
@@ -529,6 +532,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
             order.receiver_id_number = id_number
             order.receiver_name = receiver_name
             order.job = job
+            if external_package_no:
+                order.external_package_no = external_package_no
             job.version = "v3"
 
         ticket_number = order.order_number

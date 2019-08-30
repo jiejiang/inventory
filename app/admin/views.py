@@ -65,10 +65,10 @@ class JobAdmin(LoginRequiredModelView):
 
 class SuccessJobAdmin(JobAdmin):
     list_template = "admin/job/list.html"
-    column_searchable_list = ('uuid', 'creation_time', 'issuer')
+    column_searchable_list = ('uuid', 'creation_time', 'issuer', 'external_order_no')
     column_exclude_list = ('percentage', 'message')
     column_default_sort = ('completion_time', True)
-    column_list = ('uuid', 'status', 'completion_time', 'item_count', 'version', 'issuer')
+    column_list = ('uuid', 'status', 'completion_time', 'item_count', 'version', 'issuer', 'external_order_no')
 
     def get_query(self):
         return self.session.query(self.model).filter(self.model.status == Job.Status.COMPLETED)
@@ -78,7 +78,7 @@ class SuccessJobAdmin(JobAdmin):
 
 class FailedJobAdmin(JobAdmin):
     column_default_sort = ('creation_time', True)
-    column_list = ('uuid', 'status', 'creation_time', 'percentage', 'message', 'issuer')
+    column_list = ('uuid', 'status', 'creation_time', 'percentage', 'message', 'issuer', 'external_order_no')
 
     def get_query(self):
         return self.session.query(self.model).filter(or_(self.model.status == Job.Status.FAILED, self.model.status == Job.Status.DELETED))
@@ -96,7 +96,7 @@ class OrderAdmin(LoginRequiredModelView):
         'used_time': lambda v, c, m, p: time_format(m.used_time),
     }
 
-    column_searchable_list = ('order_number', 'receiver_id_number', 'receiver_name')
+    column_searchable_list = ('order_number', 'receiver_id_number', 'receiver_name', 'external_package_no')
     column_exclude_list = ('job',)
     form_excluded_columns = ('job',)
     column_details_exclude_list = ('job',)

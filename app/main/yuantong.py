@@ -106,6 +106,78 @@ if __name__ == '__main__':
 		"needDistributeCode":true
 	}
 }""" % transport_mode_code
+#     payload = """{
+# 	"transportModeCode": "%s",
+# 	"weight": "10",
+# 	"weightUnit": "LB",
+# 	"channelHawbcode": "YTFWQDDM001",
+# 	"Piece": "5",
+# 	"declareType": "2",
+# 	"remark": "基本信息备注",
+# 	"api_version": "V1.0",
+# 	"shipper": {
+# 		"name": "发件人姓名",
+# 		"company": "圆通科技有限公司",
+# 		"countryCode": "US",
+# 		"provinceName": "陕西省",
+# 		"cityName": "西安市",
+# 		"address": "详细地址",
+# 		"postCode": "717200",
+# 		"areaName": "区域名称",
+# 		"phone": "030-1234567",
+# 		"mobile": "18509251760",
+# 		"email": "songhuijie@163.com"
+# 	},
+# 	"consignee": {
+# 		"name": "收件人姓名",
+# 		"company": "圆通科技有限公司",
+# 		"countryCode": "CN",
+# 		"provinceName": "陕西省",
+# 		"cityName": "西安市",
+# 		"address": "川南奉公路9983号",
+# 		"postCode": "75044",
+# 		"areaName": "雁塔区",
+# 		"phone": "030-1234567",
+# 		"mobile": "18509251760",
+# 		"email": "18509251760@163.com",
+# 		"certificateType": "ID",
+# 		"certificateNumber": "610628199105201727"
+# 	},
+# 	"orderInvoices": [{
+# 		"ename": "product1",
+# 		"cname": "申报品1",
+# 		"quantity": "2",
+# 		"unit": "MTR",
+# 		"unitPrice": "15.5",
+# 		"customsOrdinationNo": "HG1001",
+# 		"remark": "配货备注",
+# 		"saleAddr": "销售地址--申报品1",
+# 		"currencyCode": "USD",
+# 		"currencyName": "澳元"
+# 	}],
+# 	"orderExtraServices":[{
+# 		"code":"5Y",
+# 		"value":"1",
+# 		"remark":"保险等级1"
+# 	},
+# 	{
+# 		"code":"6P",
+# 		"value":"1",
+# 		"remark":"保险等级2"
+# 	},{
+# 		"code":"8Y",
+# 		"value":"1",
+# 		"remark":"保险等级3"
+# 	},{
+# 		"code":"CO",
+# 		"value":"100",
+# 		"remark":"代收货款"
+# 	}],
+# 	"orderBizServices":{
+# 		"needDistributeCode":true
+# 	}
+# }""" % transport_mode_code
+
     payload = json.dumps(json.loads(payload))
     headers = {
         'Content-Type': 'application/json',
@@ -114,6 +186,9 @@ if __name__ == '__main__':
         'msg_type': 'PLACE_ORDER',
         'data_digest': base64.b64encode(hashlib.md5(payload + api_key).digest()),
     }
+
+    print payload
+    print headers
 
     resp = requests.post(url, data=payload, headers=headers)
     print resp.status_code

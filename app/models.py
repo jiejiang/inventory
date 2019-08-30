@@ -18,6 +18,8 @@ class Job(db.Model):
     version = db.Column(db.String(16), nullable=True, default="")
     issuer = db.Column(db.String(128), index=True, nullable=True)
 
+    external_order_no = db.Column(db.String(64), nullable=True, default=None)
+
     class Status:
         WAITING = 0
         PROCESSING = 1
@@ -281,6 +283,8 @@ class Order(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=True)
     retraction_id = db.Column(db.Integer, db.ForeignKey('retraction.id'), nullable=True)
     discarded_time = db.Column(db.DateTime, nullable=True, default=None)
+
+    external_package_no = db.Column(db.String(64), nullable=True, default=None)
 
     class Type:
         CNPOST = 1

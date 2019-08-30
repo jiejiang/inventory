@@ -8,7 +8,7 @@
                 <tbody>
                     <tr>
                         <td style="width:220pt; font-size:150%; text-align: center">
-                            <strong>快递包裹</strong><br>
+                            <strong>YTO</strong><br>
                             <strong>{{ distribute_code }}</strong>
                         </td>
                         <td style="padding-left: 1em; padding-right:1em; text-align: center">
@@ -99,7 +99,7 @@
             <table>
                 <tbody>
                     <tr>
-                        <td colspan="2" style="font-size:70%">退件地址：咸阳机场货运站中国邮政处理中心 029-32065355&nbsp;&nbsp;&nbsp;&nbsp;退件联系人: 梁先生</td>
+                        <td colspan="2" style="font-size:70%">{% if job.external_order_no %}{{ job.external_order_no }}{% endif %}{% if job.external_order_no and order.external_package_no %}-{% endif %}{% if order.external_package_no %}{{ order.external_package_no }}{% endif %}</td>
                     </tr>
                 </tbody>
             </table>

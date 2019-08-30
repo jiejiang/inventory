@@ -54,6 +54,8 @@ class BatchOrderListAPI(Resource):
         else:
             order_type = Order.Type.DEFAULT_TYPE
 
+        external_order_no = request.form['external_order_no'] if 'external_order_no' in request.form else None
+
         file = request.files['file']
         if file:
             job = None
@@ -72,7 +74,8 @@ class BatchOrderListAPI(Resource):
                 if not os.path.exists(workdir):
                     os.makedirs(workdir)
 
-                batch_order.delay(job.uuid, save_filename, workdir, order_type, test_mode=test_mode)
+                batch_order.delay(job.uuid, save_filename, workdir, order_type, test_mode=test_mode,
+                                  external_order_no=external_order_no)
 
                 return wrap_json_response({'id': job.uuid, })
             except ConnectionError, inst:

@@ -17,7 +17,7 @@ batch_order_queue = app.config['BATCH_ORDER_QUEUE']
 
 
 @job(batch_order_queue)
-def batch_order(job_id, input_file, workdir, order_type, test_mode=False):
+def batch_order(job_id, input_file, workdir, order_type, test_mode=False, external_order_no=None):
     with app.app_context():
         job = Job.query.filter(Job.uuid == job_id).first()
         outfile = os.path.join(workdir, job_id + '.zip')
@@ -35,6 +35,8 @@ def batch_order(job_id, input_file, workdir, order_type, test_mode=False):
                 raise Exception, "Failed to find job: %d" % job_id
 
             job.status = Job.Status.PROCESSING
+            if external_order_no:
+                job.external_order_no = external_order_no
             db.session.commit()
 
             def percent_callback(percent):
