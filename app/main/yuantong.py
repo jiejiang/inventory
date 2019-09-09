@@ -46,7 +46,7 @@ def fetch_order_number(config, parameters):
     if response.status_code != requests.codes.ok:
         raise Exception(u'圆通API失败：' + response.content)
     data = response.json().get('data', {})
-    order_number = data.get('orderId', None)
+    order_number = data.get('serverHawbcode', None)
     distribute_code = data.get('distributeCode', None)
     if not order_number or not distribute_code:
         raise Exception(u'圆通API返回无效:' + response.content)
