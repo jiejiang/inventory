@@ -11,6 +11,7 @@ def fetch_order_number(config, parameters):
         raise Exception, u"无效圆通配置"
 
     waybill = OrderedDict([
+        ('orderId', parameters['order_id']),
         ('transportModeCode', transport_mode_code),
         ('weight', parameters['package_weight']),
         ('declareType', '2'),
@@ -85,6 +86,7 @@ if __name__ == '__main__':
 
     # GB-GZ N
     payload = """{
+    "orderId": "%s",
 	"transportModeCode": "%s",
 	"weight": "1",
 	"declareType": "2",
@@ -105,7 +107,7 @@ if __name__ == '__main__':
 	"orderBizServices":{
 		"needDistributeCode":true
 	}
-}""" % transport_mode_code
+}""" % (uuid.uuid4(), transport_mode_code)
 #     payload = """{
 # 	"transportModeCode": "%s",
 # 	"weight": "10",
