@@ -453,7 +453,7 @@ def fetch_ticket_number(n_row, parameters, pre_check=False):
                 order = Order()
                 order.type = Order.Type.YUANTONG
                 order.uuid = str(uuid.uuid4())
-                parameter['order_id'] = order.uuid
+                parameters['order_id'] = order.uuid
                 order.order_number, distribute_code = \
                     fetch_yuantong_order_number(current_app.config['YUANTONG_CONFIG'], parameters)
                 db.session.add(order)
