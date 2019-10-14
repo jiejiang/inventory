@@ -8,6 +8,8 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
         $scope.invalidScan = [];
         $scope.barcodeStorage = new Object();
         $scope.receiverCount = new Object();
+        $scope.receiverName = new Object();
+        $scope.receiverAddress = new Object();
         $scope.dutiable_count = 0;
         $scope.dutiable_category_count = 0;
         $scope.exportBarcodes = "";

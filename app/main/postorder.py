@@ -521,14 +521,16 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
     receiver_province_city_font_size = "3" if len(
         pc_text) <= 10 else "2.5" if len(pc_text) <= 15 else "2"
 
+    full_address = "".join(filter(
+        lambda x: x.strip(), (receiver_province, receiver_city, receiver_address)))
+
     if not ticket_number_generator:
         if job and not pre_check:
             order.used = True
             order.used_time = datetime.datetime.utcnow()
             order.sender_address = ", ".join(
                 (sender_name, sender_address, sender_phone))
-            order.receiver_address = ", ".join(
-                (receiver_address, receiver_city, receiver_post_code))
+            order.receiver_address = full_address
             order.receiver_mobile = receiver_mobile
             order.receiver_id_number = id_number
             order.receiver_name = receiver_name
@@ -544,8 +546,6 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
             pass
     else:
         ticket_number = ticket_number_generator.next()
-    full_address = "".join(filter(
-        lambda x: x.strip(), (receiver_province, receiver_city, receiver_address)))
 
     p_data_list = []
 

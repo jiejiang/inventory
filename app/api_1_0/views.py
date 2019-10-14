@@ -238,9 +238,13 @@ class RetractionAPI(Resource):
                         assert (len(receiver) == 1)
                         id_number = row[u'备注'].unique()
                         assert (len(id_number) == 1)
+                        receiver_address = row[u'收件人地址'].unique()
+                        assert (len(receiver_address) == 1)
                         dutiable, is_dutiable_category = is_dutiable(row, u'内件名称', row[u"数量"].sum())
                         return pd.Series({
-                            'message': '%s Pieces, OK' % row[u"数量"].sum(), 'receiver_name': receiver[0],
+                            'message': '%s Pieces, OK' % row[u"数量"].sum(),
+                            'receiver_name': receiver[0],
+                            'receiver_address': receiver_address[0],
                             'receiver_id_number': id_number[0], 'pieces': row[u"数量"].sum(),
                             'dutiable': dutiable,
                             'is_dutiable_category': True if is_dutiable_category else False,
@@ -252,7 +256,7 @@ class RetractionAPI(Resource):
                     product_info_df.rename(columns={'full_name': u'内件名称'}, inplace=True)
                     package_df = pd.merge(package_df, product_info_df, on=u'内件名称')
 
-                    extract_df = package_df[[u'快件单号', u'数量', u'内件名称', u'收件人', u'备注',
+                    extract_df = package_df[[u'快件单号', u'数量', u'内件名称', u'收件人', u'备注', u'收件人地址',
                                              'dutiable_as_any_4_pieces', 'non_dutiable_as_all_6_pieces']]\
                         .groupby(u'快件单号').apply(join_func)
                     extract_df['barcode'] = extract_df.index
@@ -396,6 +400,7 @@ class OrderInfoAPI(Resource):
             info['is_dutiable_category'] = True if is_dutiable_category else False
             info['receiver_name'] = order.receiver_name
             info['receiver_id_number'] = order.receiver_id_number
+            info['receiver_address'] = order.receiver_address
             info['success'] = True
         except Exception, inst:
             info['success'] = False
