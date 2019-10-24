@@ -24,6 +24,7 @@ from flask import current_app
 from pdf2image import convert_from_path, convert_from_bytes
 from faker import Faker
 from unidecode import unidecode
+from id_number import validate as id_number_validate
 
 from ..models import City, Order, ProductInfo
 from .. import db
@@ -501,6 +502,9 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
 
     if pd.isnull(n_package) or not isinstance(n_package, int) or n_package < 1:
         raise Exception, u"第%d行 物品种类数量 或者 包裹数量 异常" % n_row
+
+    if not id_number_validate(id_number):
+        raise Exception, u"第%d行身份证号码无效%s" % (n_row, id_number)
 
     sender_name = "".join(sender_name.split())
     sender_address = "".join(sender_address.split())
