@@ -74,8 +74,9 @@
                                 <tr>
                                     <th>No.</th>
                                     <th>Barcode</th>
-                                    <th>Name</th>
                                     <th>ID Card</th>
+                                    <th>Name</th>
+                                    <th>Address</th>
                                     <th>Detail</th>
                                     <th>Prompt</th>
                                     <th></th>
@@ -85,8 +86,9 @@
                                 <tr class="success" ng-repeat="scan in validScan | orderBy:'-' track by $index" ng-class="getAcceptClass($index)">
                                     <td>{[validScan.length - $index]}</td>
                                     <td>{[scan.barcode]}</td>
-                                    <td>{[barcodeStorage[scan.barcode].receiver_name]}</td>
                                     <td>{[barcodeStorage[scan.barcode].receiver_id_number]}</td>
+                                    <td>{[barcodeStorage[scan.barcode].receiver_name]}</td>
+                                    <td>{[barcodeStorage[scan.barcode].receiver_address]}</td>
                                     <td>{[barcodeStorage[scan.barcode].detail]}</td>
                                     <td>{[scan.prompt]}</td>
                                     <td><a class="btn btn-warning btn-xs" ng-click="removeValidScan(validScan.length - $index - 1)"><i class="fa fa-trash-o"></i></a></td>
@@ -110,8 +112,9 @@
                                 <tr>
                                     <th>No.</th>
                                     <th>Barcode</th>
-                                    <th>Name</th>
                                     <th>ID Card</th>
+                                    <th>Name</th>
+                                    <th>Address</th>
                                     <th>Detail</th>
                                     <th>Prompt</th>
                                 </tr>
@@ -120,8 +123,9 @@
                                 <tr class="default" ng-repeat="scan in preScans.scans track by $index">
                                     <td>##{[preScans.scans.length - $index]}</td>
                                     <td>{[scan.barcode]}</td>
-                                    <td>{[scan.receiver_name]}</td>
                                     <td>{[scan.receiver_id_number]}</td>
+                                    <td>{[scan.receiver_name]}</td>
+                                    <td>{[scan.receiver_address]}</td>
                                     <td>{[scan.detail]}</td>
                                     <td>{[scan.message]}</td>
                                 </tr>
