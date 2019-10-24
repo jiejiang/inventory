@@ -156,7 +156,7 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
                         if ($scope.route_info['max_order_number_per_receiver'] &&
                         (($scope.receiverCount[receiver_id_number] >= $scope.route_info['max_order_number_per_receiver'])
                         || ($scope.receiverName[receiver_name] >= $scope.route_info['max_order_number_per_receiver'])
-                        || ($scope.receiverAddress[receiver_address] >= $scope.route_info['max_order_number_per_receiver']))) {
+                        )) { //|| ($scope.receiverAddress[receiver_address] >= $scope.route_info['max_order_number_per_receiver'])
                             message = "Error: Exceeded Personal Package Allowance: " + $scope.route_info['max_order_number_per_receiver'];
                             $scope.invalidScan.push({barcode:barcode, prompt:message});
 
@@ -250,8 +250,8 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
                         if ($scope.route_info['max_order_number_per_receiver']
                         && ((_receiverCount[scan.receiver_id_number] >= $scope.route_info['max_order_number_per_receiver'])
                         || (_receiverName[scan.receiver_name] >= $scope.route_info['max_order_number_per_receiver'])
-                        || (_receiverAddress[scan.receiver_address] >= $scope.route_info['max_order_number_per_receiver']))) {
-                            $scope.addAlert('Loading failed with exceeded personal allowance ('
+                        )) { //|| (_receiverAddress[scan.receiver_address] >= $scope.route_info['max_order_number_per_receiver'])
+                            $scope.addAlert('Loading failed with exceeded personal allowance :'
                             + $scope.route_info['max_order_number_per_receiver']);
                             return;
                         }
@@ -283,17 +283,17 @@ postOrdersApp.controller('ScanBarcode', ['$scope', 'Upload', 'ScanOrder', 'Route
                                 }
                             }
                         }
-                        for (var receiver_address in _receiverAddress) {
-                            if (_receiverAddress.hasOwnProperty(receiver_address)
-                            && $scope.receiverAddress.hasOwnProperty(receiver_address)) {
-                                if (_receiverAddress[receiver_address] + $scope.receiverAddress[receiver_address]
-                                > $scope.route_info['max_order_number_per_receiver']) {
-                                    $scope.addAlert('Loading failed with exceeded personal allowance ('
-                                    + $scope.route_info['max_order_number_per_receiver'] + '): ' + receiver_address)
-                                    return;
-                                }
-                            }
-                        }
+//                        for (var receiver_address in _receiverAddress) {
+//                            if (_receiverAddress.hasOwnProperty(receiver_address)
+//                            && $scope.receiverAddress.hasOwnProperty(receiver_address)) {
+//                                if (_receiverAddress[receiver_address] + $scope.receiverAddress[receiver_address]
+//                                > $scope.route_info['max_order_number_per_receiver']) {
+//                                    $scope.addAlert('Loading failed with exceeded personal allowance ('
+//                                    + $scope.route_info['max_order_number_per_receiver'] + '): ' + receiver_address)
+//                                    return;
+//                                }
+//                            }
+//                        }
                     }
                     //combine and add
                     var scans = [];
