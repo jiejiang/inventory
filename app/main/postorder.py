@@ -668,7 +668,7 @@ def xls_to_orders(input, output, tmpdir, order_type, percent_callback=None, job=
             raise Exception, u"第%d行缺身份证,请更正" % (index+1)
         id_number = str(id_number)
         if not id_number_validate(id_number):
-            invalid_id_numbers.append(id_number)
+            invalid_id_numbers.append(u"%s (第%d行)" % (id_number, index+1))
     if invalid_id_numbers:
         raise Exception(u'身份证号码无效: %s' % (', '.join(invalid_id_numbers)))
 
