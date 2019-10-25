@@ -70,4 +70,16 @@ def validate(code):
     return True
 
 if __name__ == '__main__':
-    print validate(sys.argv[1])
+    if sys.argv[1] == '--add-region-code' and sys.argv[2] and len(sys.argv[2]) == 6 and sys.argv[2].isdigit() and sys.argv[3]:
+        region_code = sys.argv[2]
+        region_name = sys.argv[3]
+        iddata_filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'iddata.pkl')
+        with open(iddata_filepath, 'rb') as f:
+            iddata = pickle.load(f)
+        if not region_code in iddata:
+            print "add ", region_code, region_name
+            iddata[region_code] = region_name
+            with open(iddata_filepath, 'wb') as f:
+                pickle.dump(iddata, f)
+    else:
+        print validate(sys.argv[1])

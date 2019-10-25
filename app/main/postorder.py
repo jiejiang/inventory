@@ -503,8 +503,8 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
     if pd.isnull(n_package) or not isinstance(n_package, int) or n_package < 1:
         raise Exception, u"第%d行 物品种类数量 或者 包裹数量 异常" % n_row
 
-    if not id_number_validate(id_number):
-        raise Exception, u"第%d行身份证号码无效%s" % (n_row, id_number)
+    #if not id_number_validate(id_number):
+    #    raise Exception, u"第%d行身份证号码无效%s" % (n_row, id_number)
 
     sender_name = "".join(sender_name.split())
     sender_address = "".join(sender_address.split())
@@ -659,6 +659,15 @@ def xls_to_orders(input, output, tmpdir, order_type, percent_callback=None, job=
         test_ticket_number_generator = ticket_number_generator()
         if job:
             job.version = "test_mode"
+
+    #check id number
+    invalid_id_numbers = []
+    for index, in_row in in_df.iterrows():
+        id_number = in_row[u'身份证号(EMS需要)']
+        if not id_number_validate(id_number):
+            invalid_id_numbers.append(id_number)
+    if invalid_id_numbers:
+        raise Exception(u'身份证号码无效: %s' % (', '.join(invalid_id_numbers)))
 
     # precheck to avoid yuantong api on invalid data
     if order_type == Order.Type.YUANTONG:
