@@ -663,7 +663,7 @@ def xls_to_orders(input, output, tmpdir, order_type, percent_callback=None, job=
     #check id number
     invalid_id_numbers = []
     for index, in_row in in_df.iterrows():
-        id_number = in_row[u'身份证号(EMS需要)']
+        id_number = str(in_row[u'身份证号(EMS需要)'])
         if not id_number_validate(id_number):
             invalid_id_numbers.append(id_number)
     if invalid_id_numbers:
