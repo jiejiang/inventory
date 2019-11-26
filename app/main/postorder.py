@@ -514,7 +514,7 @@ def process_row(n_row, in_row, barcode_dir, tmpdir, order_type, job=None, ticket
     receiver_address = "".join(receiver_address.split())
     receiver_city = "".join(receiver_city.split())
     receiver_post_code = "".join(receiver_post_code.split())
-    id_number = "".join(id_number.split())
+    id_number = "".join(id_number.split()).replace(u'\u202c'.encode('utf-8'), '')
 
     package_type, order, receiver_province, receiver_municipal, receiver_address_header, distribute_code = \
         fetch_ticket_number(n_row, locals(), pre_check)
@@ -666,7 +666,7 @@ def xls_to_orders(input, output, tmpdir, order_type, percent_callback=None, job=
         id_number = in_row[u'身份证号(EMS需要)']
         if pd.isnull(id_number):
             raise Exception, u"第%d行缺身份证,请更正" % (index+1)
-        id_number = str(id_number)
+        id_number = str(id_number).replace(u'\u202c'.encode('utf-8'), '')
         if not id_number_validate(id_number):
             invalid_id_numbers.append(u"%s (第%d行)" % (id_number, index+1))
     if invalid_id_numbers:

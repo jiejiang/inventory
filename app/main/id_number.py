@@ -86,4 +86,4 @@ if __name__ == '__main__':
             with open(iddata_filepath, 'wb') as f:
                 pickle.dump(iddata, f)
     else:
-        print validate(sys.argv[1])
+        print validate(sys.argv[1].replace(u'\u202c'.encode('utf-8'), ''))
