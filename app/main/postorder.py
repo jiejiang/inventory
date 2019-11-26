@@ -666,7 +666,8 @@ def xls_to_orders(input, output, tmpdir, order_type, percent_callback=None, job=
         id_number = in_row[u'身份证号(EMS需要)']
         if pd.isnull(id_number):
             raise Exception, u"第%d行缺身份证,请更正" % (index+1)
-        id_number = str(id_number).replace(u'\u202c'.encode('utf-8'), '')
+        id_number = str(id_number)
+        id_number = "".join(id_number.split()).replace(u'\u202c'.encode('utf-8'), '')
         if not id_number_validate(id_number):
             invalid_id_numbers.append(u"%s (第%d行)" % (id_number, index+1))
     if invalid_id_numbers:
