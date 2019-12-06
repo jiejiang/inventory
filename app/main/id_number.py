@@ -2,7 +2,7 @@
 import pickle, os, sys, datetime
 
 __ID_DATA = None
-__ID_DATA_4 = None
+__ID_DATA_3 = None
 
 def __borderline(str1, ch='*'):
     # 函数目的是为一行或多行字符串加上一个边框，更美观的输出，*为缺省边框字符
@@ -51,7 +51,7 @@ def validate(code):
     :param code:
     :return:
     """
-    global __ID_DATA, __ID_DATA_4
+    global __ID_DATA, __ID_DATA_3
     if not code or (len(code) != 15 and len(code) != 18):
         return False
     if len(code) == 15:
@@ -61,10 +61,10 @@ def validate(code):
     if not __ID_DATA:
         with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'iddata.pkl'), 'rb') as f:
             __ID_DATA = pickle.load(f)
-            __ID_DATA_4 = set()
+            __ID_DATA_3 = set()
             for key, value in __ID_DATA.iteritems():
-                __ID_DATA_4.add(key[:4])
-    if not code[:4] in __ID_DATA_4:
+                __ID_DATA_3.add(key[:3])
+    if not code[:3] in __ID_DATA_3:
         return False
     if __checkDate(code) == False:
         return False

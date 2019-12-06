@@ -14,3 +14,4 @@ instance/local_config.py
 logs
 /tts
 *.log
+/bk_venv
