@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'jie'
 
-import uuid, datetime, re, sys
+import uuid, datetime, re, sys, random
 from sqlalchemy import desc, asc, Index, UniqueConstraint, and_
 from flask_user import UserMixin
 from . import db
@@ -361,6 +361,8 @@ class Retraction(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     message = db.Column(db.Text)
     orders = db.relationship("Order", backref='retraction', lazy='dynamic')
+    landed_time = db.Column(db.DateTime, default=None, nullable=True)
+    custom_clearance_time = db.Column(db.DateTime, default=None, nullable=True)
 
     is_redo = db.Column(db.Boolean, default=False)
 
@@ -368,6 +370,15 @@ class Retraction(db.Model):
     def new():
         id = str(uuid.uuid4())
         retraction = Retraction(uuid=id)
+        depature_time = datetime.datetime.utcnow()
+        landed_time = depature_time + datetime.timedelta(
+            days=3, hours=random.randrange(-3, 3), minutes=random.randrange(-30, 30),
+            seconds=random.randrange(-30, 30))
+        custom_clearance_time = depature_time + datetime.timedelta(
+            days=4, hours=random.randrange(-3, 3), minutes=random.randrange(-30, 30),
+            seconds=random.randrange(-30, 30))
+        retraction.landed_time = landed_time.replace(microsecond=0)
+        retraction.custom_clearance_time = custom_clearance_time.replace(microsecond=0)
         return retraction
 
     def __unicode__(self):

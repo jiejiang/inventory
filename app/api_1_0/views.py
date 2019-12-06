@@ -414,7 +414,9 @@ class OrderStatusAPI(Resource):
     fields = {
         'orderNumber': fields.String(attribute='order_number'),
         'usedTime': fields.DateTime(dt_format='iso8601', attribute='used_time'),
-        'retractionTime': fields.DateTime(dt_format='iso8601', attribute='retraction.timestamp')
+        'retractionTime': fields.DateTime(dt_format='iso8601', attribute='retraction.timestamp'),
+        'landedTime': fields.DateTime(dt_format='iso8601', attribute='retraction.landed_time'),
+        'customClearanceTime': fields.DateTime(dt_format='iso8601', attribute='retraction.custom_clearance_time'),
     }
 
     @marshal_with(fields)
