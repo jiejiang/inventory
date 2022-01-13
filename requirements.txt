@@ -42,7 +42,7 @@ openpyxl==2.4.7
 pandas==0.18.1
 passlib==1.6.5
 pdf2image==0.1.10
-Pillow==3.2.0
+Pillow==9.0.0
 psycogreen==1.0
 psycopg2==2.6.1
 pycparser==2.14
