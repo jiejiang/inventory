@@ -28,7 +28,7 @@ Flask-WTF==0.12
 gevent==1.1.1
 greenlet==0.4.9
 gunicorn==19.6.0
-html5lib==0.9999999
+html5lib==0.99999999
 ipaddress==1.0.22
 itsdangerous==0.24
 jdcal==1.3
